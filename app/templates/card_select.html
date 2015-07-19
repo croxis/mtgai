@@ -3,9 +3,13 @@
 
 {% block content %}
 <div class="container">
-    {% for card in cards %}
+    Images generated at <a href="http://www.mtgcardmaker.com/">MTGCardmaker.com</a>.
+</div>
+<div class="container">
+    {% for url in urls %}
     <div class="col-md-4">
-        {{ card.format(gatherer=True) }}
+        {#{ card.format(gatherer=False, for_forum=False) }#}
+        <img src="{{ url }}">
     </div>
     {% endfor %}
 </div>
