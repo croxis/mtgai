@@ -30,6 +30,26 @@ def card_select():
     return render_template('card_select.html', cards=cards, urls=urls)
 
 
+@main.route('/mtgai', methods=['GET', 'POST'])
+def index2():
+    form = SubmitCardsForm()
+    if form.validate_on_submit():
+        session['card text'] = form.body.data
+        return redirect(url_for('.card_select'))
+    return render_template('index.html',
+                           current_time=datetime.utcnow(),
+                           form=form,
+                           name='name',
+                           title='MTG Automatic Inventor (MTGAI)')
+
+
+@main.route('/mtgai/card-select', methods=['GET', 'POST'])
+def card_select2():
+    cards = convert_cards(session['card text'])[:6]  # Max 6 cards for testing
+    urls = create_urls(cards)
+    return render_template('card_select.html', cards=cards, urls=urls)
+
+
 def convert_cards(text, cardsep='\r\n\r\n'):
     '''Card seperation is \r\n\r\n when submitted by form and \n\n by text
     file.'''
