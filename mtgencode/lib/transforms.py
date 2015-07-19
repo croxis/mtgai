@@ -327,7 +327,7 @@ def text_pass_7_choice(s):
     # to '[n = ability = ability]\n'
     
     def choice_formatting_helper(s_helper, prefix, count):
-        single_choices = re.findall(ur'(' + prefix + ur'\n?(\u2022.*(\n|$))+)', s_helper)
+        single_choices = re.findall(r'(' + prefix + r'\n?(\u2022.*(\n|$))+)', s_helper)
         for choice in single_choices:
             newchoice = choice[0]
             newchoice = newchoice.replace(prefix, unary_marker + (unary_counter * count))
@@ -339,15 +339,15 @@ def text_pass_7_choice(s):
             s_helper = s_helper.replace(choice[0], newchoice)
         return s_helper
 
-    s = choice_formatting_helper(s, ur'choose one \u2014', 1)
-    s = choice_formatting_helper(s, ur'choose one \u2014 ', 1) # ty Promise of Power
-    s = choice_formatting_helper(s, ur'choose two \u2014', 2)
-    s = choice_formatting_helper(s, ur'choose two \u2014 ', 2) # ty Profane Command
-    s = choice_formatting_helper(s, ur'choose one or both \u2014', 0)
-    s = choice_formatting_helper(s, ur'choose one or more \u2014', 0)
-    s = choice_formatting_helper(s, ur'choose khans or dragons.', 1)
+    s = choice_formatting_helper(s, r'choose one \u2014', 1)
+    s = choice_formatting_helper(s, r'choose one \u2014 ', 1) # ty Promise of Power
+    s = choice_formatting_helper(s, r'choose two \u2014', 2)
+    s = choice_formatting_helper(s, r'choose two \u2014 ', 2) # ty Profane Command
+    s = choice_formatting_helper(s, r'choose one or both \u2014', 0)
+    s = choice_formatting_helper(s, r'choose one or more \u2014', 0)
+    s = choice_formatting_helper(s, r'choose khans or dragons.', 1)
     # this is for 'an opponent chooses one', which will be a bit weird but still work out
-    s = choice_formatting_helper(s, ur'chooses one \u2014', 1)
+    s = choice_formatting_helper(s, r'chooses one \u2014', 1)
 
     return s
 
@@ -371,7 +371,7 @@ def text_pass_8_equip(s):
         else:
             s = equip + '\n' + s
 
-    nonmana = re.findall(ur'(equip\u2014.*(\n|$))', s)
+    nonmana = re.findall(r'(equip\u2014.*(\n|$))', s)
     if len(nonmana) == 1:
         equip = nonmana[0][0]
         s = s.replace('\n' + equip, '')

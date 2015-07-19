@@ -10,10 +10,15 @@ from .forms import SubmitCardsForm
 def index():
     form = SubmitCardsForm()
     if form.validate_on_submit():
-        # things
-        return redirect(url_for('.index'))
+        session['card text'] = form.body.data
+        return redirect(url_for('.card_select'))
     return render_template('index.html',
                            current_time=datetime.utcnow(),
                            form=form,
                            name='name',
                            title='MTG Automatic Inventor (MTGAI)')
+
+
+@main.route('/card-select', methods=['GET', 'POST'])
+def card_select():
+    return render_template('card_select.html')
