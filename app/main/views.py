@@ -35,7 +35,7 @@ def index2():
     form = SubmitCardsForm()
     if form.validate_on_submit():
         session['card text'] = form.body.data
-        return redirect(url_for('.card_select'))
+        return redirect(url_for('.card_select2'))
     return render_template('index.html',
                            current_time=datetime.utcnow(),
                            form=form,
