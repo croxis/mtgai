@@ -6,6 +6,9 @@ import re
 
 import utils
 
+def cmp(a, b):
+    return (a > b) - (a < b)
+
 cardsep = utils.cardsep
 fieldsep = utils.fieldsep
 bsidesep = utils.bsidesep
@@ -404,7 +407,7 @@ def text_unpass_1_choice(s, delimit = False):
     choice_regex = (re.escape(choice_open_delimiter) + re.escape(unary_marker)
                     + r'.*' + re.escape(bullet_marker) + r'.*' + re.escape(choice_close_delimiter))
     choices = re.findall(choice_regex, s)
-    for choice in sorted(choices, lambda x,y: cmp(len(x), len(y)), reverse = True):
+    for choice in sorted(choices, key=lambda x,y: cmp(len(x), len(y)), reverse = True):
         fragments = choice[1:-1].split(bullet_marker)
         countfrag = fragments[0]
         optfrags = fragments[1:]

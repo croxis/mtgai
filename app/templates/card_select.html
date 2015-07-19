@@ -1,10 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title></title>
-</head>
-<body>
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
 
-</body>
-</html>
+{% block content %}
+<div class="container">
+    {% for card in cards %}
+    <div class="col-md-4">
+        {{ card.format(gatherer=True) }}
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

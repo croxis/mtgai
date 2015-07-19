@@ -7,6 +7,7 @@ from flask.ext.script import Manager, Shell
 # Manually adding mtgencode to path because hardcast sixdrop is a jerk for not
 # adding __init__.py!
 sys.path.append('./mtgencode/lib')
+sys.path.append('./mtgencode')
 
 app = create_app(os.getenv('FLASK_CONFIG') or 'default')
 manager = Manager(app)

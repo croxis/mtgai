@@ -3,8 +3,13 @@ import re
 # Utilities for handling unicode, unary numbers, mana costs, and special symbols.
 # For convenience we redefine everything from config so that it can all be accessed
 # from the utils module.
+import sys
+sys.path.append('..')
+import lib.config as config
+import functools
 
-import config
+def cmp(a, b):
+    return (a > b) - (a < b)
 
 # separators
 cardsep = config.cardsep
@@ -76,7 +81,7 @@ unary_exceptions = config.unary_exceptions
 def to_unary(s, warn = False):
     numbers = re.findall(r'[0123456789]+', s)
     # replace largest first to avoid accidentally replacing shared substrings
-    for n in sorted(numbers, cmp = lambda x,y: cmp(int(x), int(y)), reverse = True):
+    for n in sorted(numbers, key=functools.cmp_to_key(lambda x,y: cmp(int(x), int(y))), reverse = True):
         i = int(n)
         if i in unary_exceptions:
             s = s.replace(n, unary_exceptions[i])
@@ -92,7 +97,7 @@ def to_unary(s, warn = False):
 def from_unary(s):
     numbers = re.findall(re.escape(unary_marker + unary_counter) + '*', s)
     # again, largest first so we don't replace substrings and break everything
-    for n in sorted(numbers, cmp = lambda x,y: cmp(len(x), len(y)), reverse = True):
+    for n in sorted(numbers, key=functools.cmp_to_key(lambda x,y: cmp(len(x), len(y))), reverse = True):
         i = (len(n) - len(unary_marker)) / len(unary_counter)
         s = s.replace(n, str(i))
     return s
@@ -400,13 +405,13 @@ def mana_untranslate(manastr, for_forum = False):
 # notice the calls to .upper(), this way we recognize lowercase symbols as well just in case
 def to_mana(s):
     jmanastrs = re.findall(mana_json_regex, s)
-    for jmanastr in sorted(jmanastrs, lambda x,y: cmp(len(x), len(y)), reverse = True):
+    for jmanastr in sorted(jmanastrs, key=lambda x,y: cmp(len(x), len(y)), reverse = True):
         s = s.replace(jmanastr, mana_translate(jmanastr.upper()))
     return s
 
 def from_mana(s, for_forum = False):
     manastrs = re.findall(mana_regex, s)
-    for manastr in sorted(manastrs, lambda x,y: cmp(len(x), len(y)), reverse = True):
+    for manastr in sorted(manastrs, key=lambda x,y: cmp(len(x), len(y)), reverse = True):
         s = s.replace(manastr, mana_untranslate(manastr.upper(), for_forum = for_forum))
     return s
     

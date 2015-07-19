@@ -1,6 +1,8 @@
 __author__ = 'croxis'
 from datetime import datetime
 from flask import redirect, render_template, session, url_for
+import lib.cardlib as cardlib
+import lib.utils as utils
 
 from . import main
 from .forms import SubmitCardsForm
@@ -21,4 +23,18 @@ def index():
 
 @main.route('/card-select', methods=['GET', 'POST'])
 def card_select():
-    return render_template('card_select.html')
+    cards = convert_cards(session['card text'])
+    return render_template('card_select.html', cards=cards)
+
+
+def convert_cards(text, cardsep='\r\n\r\n'):
+    '''Card seperation is \r\n\r\n when submitted by form and \n\n by text
+    file.'''
+    cards = []
+    for card_src in text.split(cardsep):
+        if card_src:
+            card = cardlib.Card(card_src)
+            print(dir(card))
+            if card.valid:
+                cards.append(card)
+    return cards
