@@ -2,6 +2,7 @@ __author__ = 'croxis'
 from datetime import datetime
 from io import BytesIO
 import re
+import textwrap
 import urllib.parse
 
 from flask import redirect, render_template, session, url_for, send_file
@@ -49,7 +50,15 @@ def index(raw):
               fill=(0, 0, 0, 255),
               font=font)
     draw.text((35, 300), card.types[0], fill=(0, 0, 0, 255), font=font)
-    draw.multiline_text((35, 335), card.text.format(), fill=(0, 0, 0, 255), font=font)
+    card_text = card.text.format()
+    lines = textwrap.wrap(card_text, 40)
+    offset = 0
+    for line in lines:
+        draw.multiline_text((35, 335 + offset),
+                            line,
+                            fill=(0, 0, 0, 255),
+                            font=font)
+        offset += 15
     draw.text((60, 484), "Copy, right?", fill=(0, 0, 0, 255), font=font)
 
     # Card costs
@@ -84,8 +93,21 @@ def index(raw):
         offset += 25
     if cost['colorless']:
         draw_colorless = ImageDraw.Draw(colorless_mana)
-        draw_colorless.text((8, 4), str(cost['colorless']), fill=(0, 0, 0, 255), font=font)
+        draw_colorless.text((8, 4),
+                            str(cost['colorless']),
+                            fill=(0, 0, 0, 255),
+                            font=font)
         image.paste(colorless_mana, (320 - offset, 29), colorless_mana)
+
+    # Creature power
+    if card.types[0].lower() == 'creature':
+        power = str(card.pt_p.count('^'))
+        toughness = str(card.pt_t.count('^'))
+        pt_image = Image.open('app/card_parts/magic-new.mse-style/' +
+                              color[0] +
+                              'pt.jpg')
+        image.paste(pt_image, (271, 461))
+        draw.text((290, 475), power + " / " + toughness, fill=(0, 0, 0, 255), font=font)
 
     byte_io = BytesIO()
     image.save(byte_io, 'PNG')
