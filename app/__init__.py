@@ -19,5 +19,6 @@ def create_app(config_name):
     # Attach routes and custom error pages here
     from .main import main as main_blueprint
     app.register_blueprint(main_blueprint)
-
+    from .mtgcardcraft import card_craft as card_craft_blueprint
+    app.register_blueprint(card_craft_blueprint)
     return app

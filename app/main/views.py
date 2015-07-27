@@ -2,6 +2,7 @@ __author__ = 'croxis'
 from datetime import datetime
 import re
 import urllib.parse
+
 from flask import redirect, render_template, session, url_for
 import lib.cardlib as cardlib
 
@@ -10,8 +11,13 @@ from .. import magic_image
 from .forms import SubmitCardsForm
 
 
-@main.route('/', methods=['GET', 'POST'])
+@main.route('/')
 def index():
+    return redirect(url_for('.index_mtgai'))
+
+
+@main.route('/mtgai', methods=['GET', 'POST'])
+def index_mtgai():
     form = SubmitCardsForm()
     if form.validate_on_submit():
         session['card text'] = form.body.data
@@ -23,36 +29,27 @@ def index():
                            title='MTG Automatic Inventor (MTGAI)')
 
 
-@main.route('/card-select', methods=['GET', 'POST'])
-def card_select():
-    cards = convert_cards(session['card text'])[:6]  # Max 6 cards for testing
-    urls = create_urls(cards)
-    return render_template('card_select.html', cards=cards, urls=urls)
-
-
-@main.route('/mtgai', methods=['GET', 'POST'])
-def index2():
-    form = SubmitCardsForm()
-    if form.validate_on_submit():
-        session['card text'] = form.body.data
-        return redirect(url_for('.card_select2'))
-    return render_template('index.html',
-                           current_time=datetime.utcnow(),
-                           form=form,
-                           name='name',
-                           title='MTG Automatic Inventor (MTGAI)')
-
-
 @main.route('/mtgai/card-select', methods=['GET', 'POST'])
-def card_select2():
-    cards = convert_cards(session['card text'])[:6]  # Max 6 cards for testing
-    urls = create_urls(cards)
-    return render_template('card_select.html', cards=cards, urls=urls)
+def card_select():
+    #cards = convert_cards(session['card text'])[:6]  # Max 6 cards for testing
+    urls = convert_to_urls(session['card text'])
+    return render_template('card_select.html', urls=urls)
+
+
+def convert_to_urls(card_text, cardsep='\r\n\r\n'):
+    urls = []
+    for card_src in card_text.split(cardsep):
+        if card_src:
+            card = cardlib.Card(card_src)
+            if card.valid:
+                urls.append(urllib.parse.quote(card_src, safe=''))
+
+    return urls
 
 
 def convert_cards(text, cardsep='\r\n\r\n'):
-    '''Card seperation is \r\n\r\n when submitted by form and \n\n by text
-    file.'''
+    """Card separation is \r\n\r\n when submitted by form and \n\n by text
+    file."""
     cards = []
     for card_src in text.split(cardsep):
         if card_src:
@@ -61,9 +58,9 @@ def convert_cards(text, cardsep='\r\n\r\n'):
                 cards.append(card)
     return cards
 
+
 def create_urls(cards):
     urls = []
-    print("Dir:", dir(cards[0]))
     for card in cards:
         # Cost calculation
         cost = {}
