@@ -8,3 +8,7 @@ __author__ = 'croxis'
 class SubmitCardsForm(Form):
     body = TextAreaField("Copy and paste card data here.", validators=[Required()])
     submit = SubmitField("Submit")
+
+
+class PrintCardsForm(Form):
+    submit = SubmitField("Print")

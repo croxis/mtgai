@@ -1,14 +1,18 @@
 __author__ = 'croxis'
 from datetime import datetime
-import re
+from io import BytesIO
 import urllib.parse
 
-from flask import redirect, render_template, session, url_for
+from flask import redirect, render_template, send_file, session, url_for
 import lib.cardlib as cardlib
+from PIL import Image, ImageDraw
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 from . import main
 from .. import magic_image
-from .forms import SubmitCardsForm
+from ..card_visual import create_card_img
+from .forms import PrintCardsForm, SubmitCardsForm
 
 
 @main.route('/')
@@ -31,9 +35,50 @@ def index_mtgai():
 
 @main.route('/mtgai/card-select', methods=['GET', 'POST'])
 def card_select():
-    #cards = convert_cards(session['card text'])[:6]  # Max 6 cards for testing
     urls = convert_to_urls(session['card text'])
-    return render_template('card_select.html', urls=urls)
+    form = PrintCardsForm()
+    if form.validate_on_submit():
+        return redirect(url_for('.print_cards'))
+    return render_template('card_select.html', form=form, urls=urls)
+
+
+@main.route('/mtgai/print', methods=['GET', 'POST'])
+def print_cards():
+    #LETTER = (8.5, 11)
+    LETTER = (11, 8.5)
+    DPI = 100
+    # Set print margins
+    MARGIN = 0.5
+    x_offset = int(MARGIN * DPI)
+    y_offset = int(MARGIN * DPI)
+    CARDSIZE = (int(2.49 * DPI), int(3.48 * DPI))
+    #scale = CARDSIZE[0] / 375.0  # Default cardsize in px
+    cards = convert_to_cards(session['card text'])
+    sheets = [Image.new('RGB',
+                        tuple(int(DPI * x) for x in LETTER),
+                        color=(255, 255, 255))]
+    #canvas = canvas.Canvas("cards.pdf", pagesize=letter)
+    #draw = ImageDraw.Draw(sheet)
+    for card in cards:
+        image = create_card_img(card)
+        image.thumbnail(CARDSIZE)
+        sheets[-1].paste(image, (x_offset, y_offset))
+        x_offset += CARDSIZE[0] + 5  # 5 px border around cards
+        if x_offset + CARDSIZE[0] > LETTER[0] * DPI:
+            x_offset = int(MARGIN * DPI)
+            y_offset += CARDSIZE[1] + 5
+        if y_offset + CARDSIZE[1] > LETTER[1] * DPI:
+            x_offset = int(MARGIN * DPI)
+            y_offset = int(MARGIN * DPI)
+            sheets.append(Image.new('RGB',
+                                    tuple(int(DPI * x) for x in LETTER),
+                                    color=(255, 255, 255)))
+    byte_io = BytesIO()
+    #sheets[0].save(byte_io, 'PDF')
+    sheets[0].save(byte_io, 'PNG')
+    byte_io.seek(0)
+    return send_file(byte_io, mimetype='image/png')
+    #return send_file(byte_io, mimetype='application/pdf')
 
 
 def convert_to_urls(card_text, cardsep='\r\n\r\n'):
@@ -47,7 +92,7 @@ def convert_to_urls(card_text, cardsep='\r\n\r\n'):
     return urls
 
 
-def convert_cards(text, cardsep='\r\n\r\n'):
+def convert_to_cards(text, cardsep='\r\n\r\n'):
     """Card separation is \r\n\r\n when submitted by form and \n\n by text
     file."""
     cards = []
@@ -57,54 +102,3 @@ def convert_cards(text, cardsep='\r\n\r\n'):
             if card.valid:
                 cards.append(card)
     return cards
-
-
-def create_urls(cards):
-    urls = []
-    for card in cards:
-        # Cost calculation
-        cost = {}
-        colorless = 0
-        cost['white'] = card.cost.format().lower().count('w')
-        cost['blue'] = card.cost.format().lower().count('u')
-        cost['black'] = card.cost.format().lower().count('b')
-        cost['red'] = card.cost.format().lower().count('r')
-        cost['green'] = card.cost.format().lower().count('g')
-        color = str(max(cost, key=cost.get))
-        for key, value in cost.items():
-            if value:
-                break
-        else:
-            color = 'artifact'
-        rg = re.compile('(\\d+)', re.IGNORECASE|re.DOTALL)
-        m = rg.search(card.cost.format())
-        if m:
-            colorless = int(m.group(1))
-        power = ''
-        toughness = ''
-        if card.types[0].lower() == 'creature':
-            power = str(card.pt_p.count('^'))
-            toughness = str(card.pt_t.count('^'))
-        # Find an image
-        terms = magic_image.find_search_terms(card.encode())
-        img_url = ''
-        for term in terms:
-            #color = term[-1]
-            query = "+".join(term[:-1])
-            img_url = magic_image.fetch(query + '+"fantasy"+paintings+-card', color)
-            if img_url:
-                break
-        url = "http://www.mtgcardmaker.com/mcmaker/createcard.php?name=" + \
-              card.name.format(gatherer=True) + \
-              "&color=" + color + \
-              "&mana_r=" + str(cost['red']) + "&mana_u=" + str(cost['blue']) + \
-              "&mana_g=" + str(cost['green']) + "&mana_b=" + str(cost['black']) + \
-              "&mana_w=" + str(cost['white']) + "&mana_colorless=" + str(colorless) + \
-              "&picture=" + urllib.parse.quote(img_url) + "&supertype=&cardtype=" + \
-              card.types[0] + \
-              "&subtype=&expansion=&rarity=Common&cardtext=" + \
-              card.text.format() + \
-              "&power=" + power + "&toughness=" + toughness + "&artist=&bottom=%E2%84%A2+%26+%C2%A9+1993-2016+Wizards+of+the+Coast+LLC&set1=&set2=&setname="
-        urls.append(url)
-    return urls
-

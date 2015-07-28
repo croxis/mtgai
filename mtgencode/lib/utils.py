@@ -95,11 +95,11 @@ def to_unary(s, warn = False):
     return s
 
 def from_unary(s):
-    numbers = re.findall(re.escape(unary_marker + unary_counter) + '*', s)
+    #numbers = re.findall(re.escape(unary_marker + unary_counter) + '*', s)
     # again, largest first so we don't replace substrings and break everything
-    for n in sorted(numbers, key=functools.cmp_to_key(lambda x,y: cmp(len(x), len(y))), reverse = True):
+    '''for n in sorted(numbers, key=functools.cmp_to_key(lambda x,y: cmp(len(x), len(y))), reverse = True):
         i = (len(n) - len(unary_marker)) / len(unary_counter)
-        s = s.replace(n, str(i))
+        s = s.replace(n, str(int(i)))'''
     return s
 
 # mana syntax
@@ -451,7 +451,7 @@ def to_symbols(s):
     return s
 
 def from_symbols(s, for_forum = False):
-    symstrs = re.findall(symbol_regex, s)
+    symstrs = re.findall(symbol_regex, s.text)
     #for symstr in sorted(symstrs, lambda x,y: cmp(len(x), len(y)), reverse = True):
     # We have to do the right thing here, because the thing we replace exists in the thing
     # we replace it with...
@@ -459,7 +459,14 @@ def from_symbols(s, for_forum = False):
         if for_forum:
             s = s.replace(symstr, symbol_forum_trans[symstr])
         else:
-            s = s.replace(symstr, symbol_trans[symstr])
+            try:
+                s = s.replace(symstr, symbol_trans[symstr])
+            except:
+                import traceback
+                print(traceback.format_exc())
+                print(s)
+                print(symstr)
+                print(symbol_trans[symstr])
     return s
 
 unletters_regex = r"[^abcdefghijklmnopqrstuvwxyz']"

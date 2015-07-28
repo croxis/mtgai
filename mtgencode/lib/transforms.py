@@ -406,7 +406,7 @@ def text_pass_10_symbols(s):
 def text_unpass_1_choice(s, delimit = False):
     choice_regex = (re.escape(choice_open_delimiter) + re.escape(unary_marker)
                     + r'.*' + re.escape(bullet_marker) + r'.*' + re.escape(choice_close_delimiter))
-    choices = re.findall(choice_regex, s)
+    choices = re.findall(choice_regex, s.text)
     for choice in sorted(choices, key=lambda x,y: cmp(len(x), len(y)), reverse = True):
         fragments = choice[1:-1].split(bullet_marker)
         countfrag = fragments[0]
@@ -445,10 +445,10 @@ def text_unpass_1_choice(s, delimit = False):
 
 def text_unpass_2_counters(s):
     countertypes = re.findall(r'countertype ' + re.escape(counter_marker) 
-                              + r'[^' + re.escape(newline) + r']*' + re.escape(newline), s)
+                              + r'[^' + re.escape(newline) + r']*' + re.escape(newline), s.text)
     # lazier than using groups in the regex
     countertypes += re.findall(r'countertype ' + re.escape(counter_marker) 
-                              + r'[^' + re.escape(newline) + r']*$', s)
+                              + r'[^' + re.escape(newline) + r']*$', s.text)
     if len(countertypes) > 0:
         countertype = countertypes[0].replace('countertype ' + counter_marker, '')
         countertype = countertype.replace(newline, '\n').strip()
