@@ -1,12 +1,13 @@
 __author__ = 'croxis'
 from datetime import datetime
-from io import BytesIO
+from io import BytesIO, StringIO
 import urllib.parse
 
 from flask import redirect, render_template, send_file, session, url_for
 import lib.cardlib as cardlib
 from PIL import Image, ImageDraw
-from reportlab.lib.pagesizes import letter
+from reportlab.lib.pagesizes import landscape, letter
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 
 from . import main
@@ -46,7 +47,7 @@ def card_select():
 def print_cards():
     #LETTER = (8.5, 11)
     LETTER = (11, 8.5)
-    DPI = 100
+    DPI = 72
     # Set print margins
     MARGIN = 0.5
     x_offset = int(MARGIN * DPI)
@@ -54,15 +55,15 @@ def print_cards():
     CARDSIZE = (int(2.49 * DPI), int(3.48 * DPI))
     #scale = CARDSIZE[0] / 375.0  # Default cardsize in px
     cards = convert_to_cards(session['card text'])
-    sheets = [Image.new('RGB',
-                        tuple(int(DPI * x) for x in LETTER),
-                        color=(255, 255, 255))]
-    #canvas = canvas.Canvas("cards.pdf", pagesize=letter)
+    byte_io = BytesIO()
+    from reportlab.pdfgen import canvas
+    canvas = canvas.Canvas(byte_io, pagesize=landscape(letter))
+    WIDTH, HEIGHT = landscape(letter)
     #draw = ImageDraw.Draw(sheet)
     for card in cards:
         image = create_card_img(card)
-        image.thumbnail(CARDSIZE)
-        sheets[-1].paste(image, (x_offset, y_offset))
+        image_reader = ImageReader(image)
+        canvas.drawImage(image_reader, x_offset, y_offset, width=CARDSIZE[0], height=CARDSIZE[1])
         x_offset += CARDSIZE[0] + 5  # 5 px border around cards
         if x_offset + CARDSIZE[0] > LETTER[0] * DPI:
             x_offset = int(MARGIN * DPI)
@@ -70,15 +71,10 @@ def print_cards():
         if y_offset + CARDSIZE[1] > LETTER[1] * DPI:
             x_offset = int(MARGIN * DPI)
             y_offset = int(MARGIN * DPI)
-            sheets.append(Image.new('RGB',
-                                    tuple(int(DPI * x) for x in LETTER),
-                                    color=(255, 255, 255)))
-    byte_io = BytesIO()
-    #sheets[0].save(byte_io, 'PDF')
-    sheets[0].save(byte_io, 'PNG')
+            canvas.showPage()
+    canvas.save()
     byte_io.seek(0)
-    return send_file(byte_io, mimetype='image/png')
-    #return send_file(byte_io, mimetype='application/pdf')
+    return send_file(byte_io, mimetype='application/pdf')
 
 
 def convert_to_urls(card_text, cardsep='\r\n\r\n'):
