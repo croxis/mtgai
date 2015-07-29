@@ -63,7 +63,11 @@ def print_cards():
     for card in cards:
         image = create_card_img(card)
         image_reader = ImageReader(image)
-        canvas.drawImage(image_reader, x_offset, y_offset, width=CARDSIZE[0], height=CARDSIZE[1])
+        canvas.drawImage(image_reader,
+                         x_offset,
+                         y_offset,
+                         width=CARDSIZE[0],
+                         height=CARDSIZE[1])
         x_offset += CARDSIZE[0] + 5  # 5 px border around cards
         if x_offset + CARDSIZE[0] > LETTER[0] * DPI:
             x_offset = int(MARGIN * DPI)
