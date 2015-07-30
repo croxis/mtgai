@@ -7,6 +7,8 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 class Config:
     SECRET_KEY = os.environ.get(
         'SECRET_KEY') or 'a string that is hard to velociraptor'
+    SNAPSHOTS_PATH = '~/char-rnn-master/brains'
+    GENERATOR_PATH = '~/char-rnn-master/'
 
     @staticmethod
     def init_app(app):

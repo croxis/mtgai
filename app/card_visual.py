@@ -7,6 +7,8 @@ import lib.transforms as transforms
 import lib.utils as utils
 from lib.manalib import Manatext
 
+from . import magic_image
+
 try:
     import textwrap
     import nltk.data
@@ -212,4 +214,17 @@ def create_card_img(card):
         image.paste(pt_image, (271, 461))
         draw.text((295, 470), power + " / " + toughness, fill=(0, 0, 0, 255),
                   font=font)
+
+    # Card image
+    '''terms = magic_image.find_search_terms(card.encode())
+    for term in terms:
+        #color = term[-1]
+        query = "+".join(term[:-1])
+        if color == 'u':
+            color = 'blue'
+        img_url = magic_image.fetch(query + '+"fantasy"+paintings+-card', color)
+        if img_url:
+            break
+    print(img_url)'''
+
     return image

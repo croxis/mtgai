@@ -12,6 +12,7 @@ import random
 import math
 import hashlib
 import io
+import socket
 
 import requests
 #from PIL import Image
@@ -36,11 +37,14 @@ def trim(list):
 
 
 def fetch(query, color):
-    base_url = 'https://ajax.googleapis.com/ajax/services/search/images?' \
-               'v=1.0&imgcolor=' + color + copyright_check + '&q=' + query + '&start=%d'
+    #base_url = 'https://ajax.googleapis.com/ajax/services/search/images?' \
+    #           'v=1.0&imgcolor=' + color + copyright_check + '&q=' + query + '&start=%d'
     # base_url = 'https://www.googleapis.com/customsearch/v1?key=YOUR_API_KEY&cx=YOUR_CSE_ID&q=flower&searchType=image&fileType=jpg&imgSize=small&alt=json'
-
-    print("Trying:", base_url)
+    copyright_check = "&as_rights=(cc_publicdomain|cc_attribute|cc_sharealike|cc_noncommercial).-(cc_nonderived)"
+    ip = socket.gethostbyname('ajax.googleapis.com')
+    base_url = 'https://' + ip + '/ajax/services/search/images?' \
+               'v=1.0&imgcolor=' + color + copyright_check + '&q=' + query + '&start=%d'
+    #print("Trying:", base_url)
 
     start = 0  # Google's start query string parameter for pagination.
     while start < 60:  # Google will only return a max of 56 results.
