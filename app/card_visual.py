@@ -4,6 +4,27 @@ import textwrap
 from PIL import Image, ImageDraw, ImageFont
 
 import lib.transforms as transforms
+import lib.utils as utils
+from lib.manalib import Manatext
+
+try:
+    import textwrap
+    import nltk.data
+    sent_tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
+    # This crazy thing is actually invoked as an unpass, so newlines are still
+    # encoded.
+    def sentencecase(s):
+        s = s.replace(utils.x_marker, utils.reserved_marker)
+        lines = s.split(utils.newline)
+        clines = []
+        for line in lines:
+            if line:
+                sentences = sent_tokenizer.tokenize(line)
+                clines += [' '.join([sent.capitalize() for sent in sentences])]
+        return utils.newline.join(clines).replace(utils.reserved_marker, utils.x_marker)
+except ImportError:
+    def sentencecase(s):
+        return s.capitalize()
 
 
 def create_card_img(card):
@@ -48,12 +69,15 @@ def create_card_img(card):
         'app/card_parts/magic-mana-beveled.mse-symbol-font/mana_w.png')
     colorless_mana = Image.open(
         'app/card_parts/magic-mana-beveled.mse-symbol-font/mana_circle.png')
+    tap = Image.open(
+        'app/card_parts/magic-mana-beveled.mse-symbol-font/mana_t.png')
     red_mana.thumbnail((25, 25))
     green_mana.thumbnail((25, 25))
     black_mana.thumbnail((25, 25))
     blue_mana.thumbnail((25, 25))
     white_mana.thumbnail((25, 25))
     colorless_mana.thumbnail((25, 25))
+    tap.thumbnail((25, 25))
 
     y_offset = 0
     for x in range(0, cost['white']):
@@ -72,12 +96,15 @@ def create_card_img(card):
         image.paste(red_mana, (320 - y_offset, 29), white_mana)
         y_offset += 25
     if cost['colorless']:
-        draw_colorless = ImageDraw.Draw(colorless_mana)
+        colorless_mana_copy = colorless_mana.copy()
+        draw_colorless = ImageDraw.Draw(colorless_mana_copy)
         draw_colorless.text((8, 4),
                             str(cost['colorless']),
                             fill=(0, 0, 0, 255),
                             font=font)
-        image.paste(colorless_mana, (320 - y_offset, 29), colorless_mana)
+        image.paste(colorless_mana_copy,
+                    (320 - y_offset, 29),
+                    colorless_mana_copy)
 
     # Card texts
     draw.text((35, 35),
@@ -87,18 +114,24 @@ def create_card_img(card):
               font=font)
     draw.text((35, 300), card.types[0].title(), fill=(0, 0, 0, 255), font=font)
     # card_text = card.text.format()
-    mtext = card.text
+    mtext = card.text.text
     mtext = transforms.text_unpass_1_choice(mtext, delimit=True)
     mtext = transforms.text_unpass_2_counters(mtext)
     mtext = transforms.text_unpass_3_unary(mtext)
-    # We will do step 4 and 6 ourselves due to Manatext not having replace()
-    # mtext = transforms.text_unpass_4_cardname(mtext, card.name)
-    mtext = transforms.text_unpass_5_symbols(mtext, for_forum=False)
-    # mtext = transforms.text_unpass_6_newlines(mtext)
-    card_text = mtext.format()
-    card_text = card_text.capitalize() # Before we inset title to preserve title caps
-    card_text = card_text.replace('@', card.name.title())
-    card_text = card_text.replace('\\', '\n')
+    mtext = transforms.text_unpass_4_symbols(mtext, for_forum=False)
+    #mtext = transforms.text_unpass_4_symbols(mtext, for_forum=True)
+    mtext = sentencecase(mtext)
+    # We will do step 5 ourselves to keep capitalization
+    mtext = transforms.text_unpass_5_cardname(mtext, card.name)
+    mtext = transforms.text_unpass_6_newlines(mtext)
+    new_text = Manatext('')
+    new_text.text = mtext
+    new_text.costs = card.text.costs
+    card_text = new_text.format()
+    #card_text = card_text.capitalize() # Before we inset title to preserve title caps
+    #card_text = card_text.replace('@', card.name.title())
+    #card_text = card_text.replace('\\', '\n')
+
     lines = textwrap.wrap(card_text, 36, replace_whitespace=False)
     y_offset = 0
     for line in lines:
@@ -113,31 +146,52 @@ def create_card_img(card):
                                         (35 + x_offset, 335 + y_offset - 5),
                                         black_mana)
                             x_offset += 25
-                        if '{b}' in subsub_line.lower():
+                        elif '{b}' in subsub_line.lower():
                             image.paste(black_mana,
                                         (35 + x_offset, 335 + y_offset - 5),
                                         black_mana)
                             x_offset += 25
-                        if '{u}' in subsub_line.lower():
+                        elif '{u}' in subsub_line.lower():
                             image.paste(blue_mana,
                                         (35 + x_offset, 335 + y_offset - 5),
                                         black_mana)
                             x_offset += 25
-                        if '{r}' in subsub_line.lower():
+                        elif '{r}' in subsub_line.lower():
                             image.paste(red_mana,
                                         (35 + x_offset, 335 + y_offset - 5),
                                         black_mana)
                             x_offset += 25
-                        if '{g}' in subsub_line.lower():
+                        elif '{g}' in subsub_line.lower():
                             image.paste(green_mana,
                                         (35 + x_offset, 335 + y_offset - 5),
                                         black_mana)
                             x_offset += 25
-                        if '{b}' in subsub_line.lower():
+                        elif '{b}' in subsub_line.lower():
                             image.paste(black_mana,
                                         (35 + x_offset, 335 + y_offset - 5),
                                         black_mana)
                             x_offset += 25
+                        elif '{t}' in subsub_line.lower():
+                            image.paste(tap,
+                                        (35 + x_offset, 335 + y_offset - 5),
+                                        tap)
+                            x_offset += 25
+                        else:
+                            try:
+                                int(subsub_line[1])
+                                colorless_mana_copy = colorless_mana.copy()
+                                draw_colorless = ImageDraw.Draw(colorless_mana_copy)
+                                draw_colorless.text((8, 4),
+                                                    str(subsub_line[1]),
+                                                    fill=(0, 0, 0, 255),
+                                                    font=font)
+
+                                image.paste(colorless_mana_copy,
+                                        (35 + x_offset, 335 + y_offset - 5),
+                                        colorless_mana_copy)
+                                x_offset += 25
+                            except:
+                                pass
                     else:
                         draw.text((35 + x_offset, 335 + y_offset),
                                   subsub_line,
