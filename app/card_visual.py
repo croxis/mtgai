@@ -1,7 +1,10 @@
 __author__ = 'croxis'
+from io import BytesIO, StringIO
 import re
 import textwrap
+
 from PIL import Image, ImageDraw, ImageFont
+import requests
 
 import lib.transforms as transforms
 import lib.utils as utils
@@ -216,7 +219,7 @@ def create_card_img(card):
                   font=font)
 
     # Card image
-    '''terms = magic_image.find_search_terms(card.encode())
+    terms = magic_image.find_search_terms(card.encode())
     for term in terms:
         #color = term[-1]
         query = "+".join(term[:-1])
@@ -225,6 +228,13 @@ def create_card_img(card):
         img_url = magic_image.fetch(query + '+"fantasy"+paintings+-card', color)
         if img_url:
             break
-    print(img_url)'''
+    with BytesIO(requests.get(img_url).content) as reader:
+        #mask = Image.open("app/card_parts/magic-new.mse-style/imagemask_standard.png")
+        reader.seek(0)
+        art = Image.open(reader)
+        #art.thumbnail((311, 228))
+        art.thumbnail((311, 311))
+        art = art.crop((0, 0, 311, 228))
+        image.paste(art, (32, 62))
 
     return image
