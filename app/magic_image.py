@@ -18,6 +18,8 @@ import requests
 #from PIL import Image
 from requests.exceptions import ConnectionError
 
+from flask import request
+
 TMP_FILE = CACHE_DIR + "/tmp.jpg"
 STORE_DIR = CACHE_DIR + "/store"
 if not os.path.exists(STORE_DIR):
@@ -37,11 +39,11 @@ def trim(list):
 
 
 def fetch(query, color):
+    user_ip = request.remote_addr
     copyright_check = "&as_rights=(cc_publicdomain|cc_attribute|cc_sharealike|cc_noncommercial).-(cc_nonderived)"
     base_url = 'https://ajax.googleapis.com/ajax/services/search/images?' \
-               'v=1.0&imgcolor=' + color + copyright_check + '&q=' + query + '&start=%d'
+               'v=1.0&imgcolor=' + color + copyright_check + '&q=' + query + '&start=%d&userip=' + user_ip
     # base_url = 'https://www.googleapis.com/customsearch/v1?key=YOUR_API_KEY&cx=YOUR_CSE_ID&q=flower&searchType=image&fileType=jpg&imgSize=small&alt=json'
-    ip = socket.gethostbyname('ajax.googleapis.com')
 
     start = 0  # Google's start query string parameter for pagination.
     while start < 60:  # Google will only return a max of 56 results.
