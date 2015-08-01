@@ -13,4 +13,12 @@
     </div>
     {% endfor %}
 </div>
+<div class="container-fluid">
+    <div class="panel panel-primary">
+        <div class="panel-heading">Raw text</div>
+    <div class="panel-body" style="max-height: 10;overflow-y: scroll; white-space: pre-wrap;">
+        {{ session.cardtext }}
+    </div>
+        </div>
+</div>
 {% endblock %}

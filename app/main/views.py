@@ -29,14 +29,6 @@ def index_mtgai():
     random_form = GenerateCardsForm()
     form = SubmitCardsForm()
     if random_form.validate_on_submit():
-        '''gen_params = {
-            'checkpoint_path': random_form.checkpoint.data,
-            'seed': random_form.seed.data,
-            'primetext': random_form.primetext.data,
-            'length': random_form.length.data,
-            'temperature': random_form.temperature.data
-        }
-        session['gen_params'] = json.dumps(gen_params)'''
         return redirect(url_for('.card_generate',
                                 checkpoint_path=random_form.checkpoint.data,
                                 seed=random_form.seed.data,
@@ -45,7 +37,8 @@ def index_mtgai():
                                 temperature=random_form.temperature.data
                                 ))
     if form.validate_on_submit():
-        session['card text'] = form.body.data
+        session['cardtext'] = form.body.data
+        session['cardsep'] = '\r\n\r\n'
         return redirect(url_for('.card_select'))
     return render_template('index.html',
                            current_time=datetime.utcnow(),
@@ -77,18 +70,18 @@ def card_generate():
     if request.args.get('temerature'):
         command.append('-temperature')
         command.append(str(request.args.get('temperature')))
-    session['card text'] = subprocess.check_output(command,
+    session['cardtext'] = subprocess.check_output(command,
                                      cwd=os.path.expanduser(app.config['GENERATOR_PATH']),
                                      shell=False,
                                      stderr=subprocess.STDOUT).decode()
+    session['cardsep'] = '\n\n'
     return redirect(url_for('.card_select'))
 
 
 @main.route('/mtgai/card-select', methods=['GET', 'POST'])
 def card_select():
     #'\n\n from gen, need to pass this somehow
-    urls = convert_to_urls(session['card text'])
-    print(session['card text'])
+    urls = convert_to_urls(session['cardtext'], cardsep=session['cardsep'])
     form = PrintCardsForm()
     if form.validate_on_submit():
         return redirect(url_for('.print_cards'))
@@ -106,7 +99,7 @@ def print_cards():
     y_offset = int(MARGIN * DPI)
     CARDSIZE = (int(2.49 * DPI), int(3.48 * DPI))
     #scale = CARDSIZE[0] / 375.0  # Default cardsize in px
-    cards = convert_to_cards(session['card text'])
+    cards = convert_to_cards(session['cardtext'])
     byte_io = BytesIO()
     from reportlab.pdfgen import canvas
     canvas = canvas.Canvas(byte_io, pagesize=landscape(letter))
