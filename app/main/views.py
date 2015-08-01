@@ -1,9 +1,12 @@
 __author__ = 'croxis'
 from datetime import datetime
 from io import BytesIO, StringIO
+import json
+import os
+import subprocess
 import urllib.parse
 
-from flask import redirect, render_template, send_file, session, url_for
+from flask import redirect, render_template, request, send_file, session, url_for
 import lib.cardlib as cardlib
 from PIL import Image, ImageDraw
 from reportlab.lib.pagesizes import landscape, letter
@@ -11,9 +14,9 @@ from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 
 from . import main
-from .. import magic_image
 from ..card_visual import create_card_img
-from .forms import PrintCardsForm, SubmitCardsForm
+from .. import app
+from .forms import GenerateCardsForm, PrintCardsForm, SubmitCardsForm
 
 
 @main.route('/')
@@ -23,20 +26,69 @@ def index():
 
 @main.route('/mtgai', methods=['GET', 'POST'])
 def index_mtgai():
+    random_form = GenerateCardsForm()
     form = SubmitCardsForm()
+    if random_form.validate_on_submit():
+        '''gen_params = {
+            'checkpoint_path': random_form.checkpoint.data,
+            'seed': random_form.seed.data,
+            'primetext': random_form.primetext.data,
+            'length': random_form.length.data,
+            'temperature': random_form.temperature.data
+        }
+        session['gen_params'] = json.dumps(gen_params)'''
+        return redirect(url_for('.card_generate',
+                                checkpoint_path=random_form.checkpoint.data,
+                                seed=random_form.seed.data,
+                                primetext=random_form.primetext.data,
+                                length=random_form.length.data,
+                                temperature=random_form.temperature.data
+                                ))
     if form.validate_on_submit():
         session['card text'] = form.body.data
         return redirect(url_for('.card_select'))
     return render_template('index.html',
                            current_time=datetime.utcnow(),
                            form=form,
+                           random_form=random_form,
                            name='name',
                            title='MTG Automatic Inventor (MTGAI)')
 
 
+#@main.route('/mtgai/card-generate/<path>/<seed>/<primetext>/<length>/<temperature>')
+@main.route('/mtgai/card-generate/')
+def card_generate():
+    checkpoint_path = os.path.join(os.path.expanduser(app.config['SNAPSHOTS_PATH']),
+                                   request.args.get('checkpoint_path'))
+    length = int(request.args.get('length'))
+    if length > app.config['LENGTH_LIMIT']:
+        length = app.config['LENGTH_LIMIT']
+    #command = ['th', 'sample_hs_v2.lua', checkpoint_path, '-gpuid', str(app.config['GPU'])]
+    command = ['th', 'sample_hs_v2.lua', checkpoint_path]
+    if request.args.get('seed'):
+        command.append('-seed')
+        command.append(request.args.get('seed'))
+    if request.args.get('primetext'):
+        command.append('-primetext')
+        command.append('"' + request.args.get('primetext') + '"')
+    if request.args.get('length'):
+        command.append('-length')
+        command.append(str(length))
+    if request.args.get('temerature'):
+        command.append('-temperature')
+        command.append(str(request.args.get('temperature')))
+    session['card text'] = subprocess.check_output(command,
+                                     cwd=os.path.expanduser(app.config['GENERATOR_PATH']),
+                                     shell=False,
+                                     stderr=subprocess.STDOUT).decode()
+    return redirect(url_for('.card_select'))
+
+
 @main.route('/mtgai/card-select', methods=['GET', 'POST'])
 def card_select():
+    #'\n\n from gen, need to pass this somehow
     urls = convert_to_urls(session['card text'])
+    print(session['card text'])
     form = PrintCardsForm()
     if form.validate_on_submit():
         return redirect(url_for('.print_cards'))

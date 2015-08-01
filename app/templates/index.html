@@ -2,5 +2,16 @@
 {% import "bootstrap/wtf.html" as wtf %}
 
 {% block content %}
-{{ wtf.quick_form(form) }}
+<div class="container-fluid">
+    <h3>Want new cards right now? Click Generate! Adjust the settings below for
+    more fined tuned generation.</h3><br />
+    <h4>Please note that the AI generation can take some time!</h4>
+    {{ wtf.quick_form(random_form, form_type="horizontal") }}
+</div>
+
+<div class="container-fluid">
+    <h3>Have a list of generated cards? Copy and paste it below to generate
+        printable cards.</h3>
+    {{ wtf.quick_form(form) }}
+</div>
 {% endblock %}
