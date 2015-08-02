@@ -90,7 +90,6 @@ def fetch(query, color):
                 time.sleep(1.5)
                 return newpath'''
 
-    print(start)
     start += 4  # 4 images per page.
 
     # Be nice to Google and they'll be nice back :)
@@ -101,7 +100,10 @@ def fetch(query, color):
 
 
 def find_search_terms(card):
-    words = card[0][:-1].lower().split("|")
+    #print("Card:", card)
+    #words = card[0][:-1].lower().split("|")
+    words = card[:-1].lower().split("|")
+    #print("Words:", words)
     mana = ""
     if len(words) > 1:
         mana = words[1]

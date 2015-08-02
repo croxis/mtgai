@@ -16,7 +16,7 @@ from reportlab.pdfgen import canvas
 from . import main
 from ..card_visual import create_card_img
 from .. import app
-from .forms import GenerateCardsForm, PrintCardsForm, SubmitCardsForm
+from .forms import GenerateCardsForm, PrintCardsForm, SubmitCardsForm, get_checkpoints_simple
 
 
 @main.route('/')
@@ -27,6 +27,10 @@ def index():
 @main.route('/mtgai', methods=['GET', 'POST'])
 def index_mtgai():
     random_form = GenerateCardsForm()
+    random_form.checkpoint.choices = [(os.path.join(b['brain_name'], b['file']),
+                                       b['brain_name'] + ' epoch: ' + b[
+                                           'epoch']) for b in
+                                      get_checkpoints_simple()]
     form = SubmitCardsForm()
     if random_form.validate_on_submit():
         return redirect(url_for('.card_generate',
@@ -56,7 +60,6 @@ def card_generate():
     length = int(request.args.get('length'))
     if length > app.config['LENGTH_LIMIT']:
         length = app.config['LENGTH_LIMIT']
-    #command = ['th', 'sample_hs_v2.lua', checkpoint_path, '-gpuid', str(app.config['GPU'])]
     command = ['th', 'sample_hs_v2.lua', checkpoint_path]
     if request.args.get('seed'):
         command.append('-seed')
@@ -70,6 +73,12 @@ def card_generate():
     if request.args.get('temerature'):
         command.append('-temperature')
         command.append(str(request.args.get('temperature')))
+    if request.args.get('name'):
+        command += ['-name', request.args.get('name')]
+    if request.args.get('types'):
+        command += ['-types', request.args.get('types')]
+    if request.args.get('bodytext_prepend'):
+        command += ['-bodytext_prepend', request.args.get('bodytext_prepend')]
     session['cardtext'] = subprocess.check_output(command,
                                      cwd=os.path.expanduser(app.config['GENERATOR_PATH']),
                                      shell=False,
@@ -80,7 +89,6 @@ def card_generate():
 
 @main.route('/mtgai/card-select', methods=['GET', 'POST'])
 def card_select():
-    #'\n\n from gen, need to pass this somehow
     urls = convert_to_urls(session['cardtext'], cardsep=session['cardsep'])
     form = PrintCardsForm()
     if form.validate_on_submit():

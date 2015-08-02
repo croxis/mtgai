@@ -1,7 +1,6 @@
 __author__ = 'croxis'
-from io import BytesIO, StringIO
+from io import BytesIO
 import re
-import textwrap
 
 from PIL import Image, ImageDraw, ImageFont
 import requests
@@ -11,6 +10,7 @@ import lib.utils as utils
 from lib.manalib import Manatext
 
 from . import magic_image
+from . import img_manager
 
 try:
     import textwrap
@@ -52,64 +52,46 @@ def create_card_img(card):
     if m:
         cost['colorless'] = int(m.group(1))
 
-    # image = Image.open("app/card_parts/magic-new.mse-style/acard.jpg")
-    if color == 'blue':
-        color = 'u'
-    image = Image.open("app/card_parts/magic-new.mse-style/" +
-                       color[0] +
-                       "card.jpg")
-    font = ImageFont.truetype("fonts/matrixb.ttf", size=20)
+    image = img_manager.get_background(color)
+    #font = ImageFont.truetype("fonts/matrixb.ttf", size=20)
+    font = ImageFont.truetype("fonts/MatrixBold.ttf", size=20)
     draw = ImageDraw.Draw(image)
 
     # Card costs
-    red_mana = Image.open(
-        'app/card_parts/magic-mana-beveled.mse-symbol-font/mana_r.png')
-    green_mana = Image.open(
-        'app/card_parts/magic-mana-beveled.mse-symbol-font/mana_g.png')
-    black_mana = Image.open(
-        'app/card_parts/magic-mana-beveled.mse-symbol-font/mana_b.png')
-    blue_mana = Image.open(
-        'app/card_parts/magic-mana-beveled.mse-symbol-font/mana_u.png')
-    white_mana = Image.open(
-        'app/card_parts/magic-mana-beveled.mse-symbol-font/mana_w.png')
-    colorless_mana = Image.open(
-        'app/card_parts/magic-mana-beveled.mse-symbol-font/mana_circle.png')
-    tap = Image.open(
-        'app/card_parts/magic-mana-beveled.mse-symbol-font/mana_t.png')
-    red_mana.thumbnail((25, 25))
-    green_mana.thumbnail((25, 25))
-    black_mana.thumbnail((25, 25))
-    blue_mana.thumbnail((25, 25))
-    white_mana.thumbnail((25, 25))
-    colorless_mana.thumbnail((25, 25))
-    tap.thumbnail((25, 25))
-
     y_offset = 0
     for x in range(0, cost['white']):
-        image.paste(white_mana, (320 - y_offset, 29), white_mana)
+        image.paste(img_manager.get_icon('white'),
+                    (320 - y_offset, 29),
+                    img_manager.get_icon('white'))
         y_offset += 25
     for x in range(0, cost['blue']):
-        image.paste(blue_mana, (320 - y_offset, 29), white_mana)
+        image.paste(img_manager.get_icon('blue'),
+                    (320 - y_offset, 29),
+                    img_manager.get_icon('blue'))
         y_offset += 25
     for x in range(0, cost['black']):
-        image.paste(black_mana, (320 - y_offset, 29), white_mana)
+        image.paste(img_manager.get_icon('black'), (320 - y_offset, 29),
+                    img_manager.get_icon('blue'))
         y_offset += 25
     for x in range(0, cost['green']):
-        image.paste(green_mana, (320 - y_offset, 29), white_mana)
+        image.paste(img_manager.get_icon('green'), (320 - y_offset, 29),
+                    img_manager.get_icon('blue'))
         y_offset += 25
     for x in range(0, cost['red']):
-        image.paste(red_mana, (320 - y_offset, 29), white_mana)
+        image.paste(img_manager.get_icon('red'), (320 - y_offset, 29),
+                    img_manager.get_icon('blue'))
         y_offset += 25
     if cost['colorless']:
-        colorless_mana_copy = colorless_mana.copy()
-        draw_colorless = ImageDraw.Draw(colorless_mana_copy)
+        colorless_mana = img_manager.get_icon('colorless')
+        draw_colorless = ImageDraw.Draw(colorless_mana)
         draw_colorless.text((8, 4),
                             str(cost['colorless']),
                             fill=(0, 0, 0, 255),
                             font=font)
-        image.paste(colorless_mana_copy,
+        image.paste(colorless_mana,
                     (320 - y_offset, 29),
-                    colorless_mana_copy)
+                    colorless_mana)
+        colorless_mana.close()
 
     # Card texts
     draw.text((35, 35),
@@ -147,53 +129,49 @@ def create_card_img(card):
                 if subsub_line:
                     if rg.match(subsub_line):
                         if '{w}' in subsub_line.lower():
-                            image.paste(white_mana,
+                            image.paste(img_manager.get_icon('white'),
                                         (35 + x_offset, 335 + y_offset - 5),
-                                        black_mana)
+                                        img_manager.get_icon('blue'))
                             x_offset += 25
                         elif '{b}' in subsub_line.lower():
-                            image.paste(black_mana,
+                            image.paste(img_manager.get_icon('black'),
                                         (35 + x_offset, 335 + y_offset - 5),
-                                        black_mana)
+                                        img_manager.get_icon('blue'))
                             x_offset += 25
                         elif '{u}' in subsub_line.lower():
-                            image.paste(blue_mana,
+                            image.paste(img_manager.get_icon('blue'),
                                         (35 + x_offset, 335 + y_offset - 5),
-                                        black_mana)
+                                        img_manager.get_icon('blue'))
                             x_offset += 25
                         elif '{r}' in subsub_line.lower():
-                            image.paste(red_mana,
+                            image.paste(img_manager.get_icon('red'),
                                         (35 + x_offset, 335 + y_offset - 5),
-                                        black_mana)
+                                        img_manager.get_icon('blue'))
                             x_offset += 25
                         elif '{g}' in subsub_line.lower():
-                            image.paste(green_mana,
+                            image.paste(img_manager.get_icon('green'),
                                         (35 + x_offset, 335 + y_offset - 5),
-                                        black_mana)
-                            x_offset += 25
-                        elif '{b}' in subsub_line.lower():
-                            image.paste(black_mana,
-                                        (35 + x_offset, 335 + y_offset - 5),
-                                        black_mana)
+                                        img_manager.get_icon('blue'))
                             x_offset += 25
                         elif '{t}' in subsub_line.lower():
-                            image.paste(tap,
+                            image.paste(img_manager.get_icon('tap'),
                                         (35 + x_offset, 335 + y_offset - 5),
-                                        tap)
+                                        img_manager.get_icon('tap'))
                             x_offset += 25
                         else:
                             try:
                                 int(subsub_line[1])
-                                colorless_mana_copy = colorless_mana.copy()
-                                draw_colorless = ImageDraw.Draw(colorless_mana_copy)
+                                colorless_mana = img_manager.get_icon('colorless')
+                                draw_colorless = ImageDraw.Draw(colorless_mana)
                                 draw_colorless.text((8, 4),
                                                     str(subsub_line[1]),
                                                     fill=(0, 0, 0, 255),
                                                     font=font)
 
-                                image.paste(colorless_mana_copy,
+                                image.paste(colorless_mana,
                                         (35 + x_offset, 335 + y_offset - 5),
-                                        colorless_mana_copy)
+                                        colorless_mana)
+                                colorless_mana.close()
                                 x_offset += 25
                             except:
                                 pass
@@ -220,6 +198,7 @@ def create_card_img(card):
 
     # Card image
     terms = magic_image.find_search_terms(card.encode())
+    print("Search terms:", terms)
     for term in terms:
         #color = term[-1]
         query = "+".join(term[:-1])
@@ -229,10 +208,8 @@ def create_card_img(card):
         if img_url:
             break
     with BytesIO(requests.get(img_url).content) as reader:
-        #mask = Image.open("app/card_parts/magic-new.mse-style/imagemask_standard.png")
         reader.seek(0)
         art = Image.open(reader)
-        #art.thumbnail((311, 228))
         art.thumbnail((311, 311))
         art = art.crop((0, 0, 311, 228))
         image.paste(art, (32, 62))

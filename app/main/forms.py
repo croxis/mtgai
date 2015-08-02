@@ -60,10 +60,11 @@ class GenerateCardsForm(Form):
                                            'epoch']) for b in
                                       get_checkpoints_simple()])'''
     checkpoint = SelectField(label="Checkpoint",
-                             choices=[(os.path.join(b['brain_name'], b['file']),
-                                       b['brain_name'] + ' epoch: ' + b[
-                                           'epoch']) for b in
-                                      get_checkpoints_simple()])
+                             choices=[
+                                 (os.path.join(b['brain_name'], b['file']),
+                                  b['brain_name'] + ' epoch: ' + b[
+                                      'epoch']) for b in
+                                 get_checkpoints_simple()])
     seed = IntegerField(label="Random seed", default=random.randint(0, 255))
     # sample = boolean
     primetext = TextField(label="Suggest",
@@ -80,14 +81,16 @@ class GenerateCardsForm(Form):
                                description="How adventerous the generator is. High number results in more creativity.",
                                validators=[NumberRange(min=0, max=200),
                                            Required()])
-    # Name
+    name = TextField(label="Name",
+                     description='Add to the start of all card names. EX: Goblin')
     # Supertype
-    # Types
+    types = TextField(label="Types",
+                      description='Add to the start of all card types. EX: Enchantment')
     # Loyalty
     # Subtypes
-    # Bodytext prepend
+    bodytext_prepend = TextField(label="Prepend body test",
+                                 description='Sdded to the start of the text sesction.')
     # Bodytext append
-
 
 
 class SubmitCardsForm(Form):

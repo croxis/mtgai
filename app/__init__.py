@@ -4,8 +4,11 @@ from flask.ext.bootstrap import Bootstrap
 from flask.ext.moment import Moment
 from config import config
 
+from .image_manager import ImageManager
+
 bootstrap = Bootstrap()
 moment = Moment()
+img_manager = ImageManager()
 app = None
 
 
