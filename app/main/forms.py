@@ -37,7 +37,8 @@ def get_checkpoints_simple():
     brain_directories = glob.glob(brain_path)
     for directory in brain_directories:
         brain_name = os.path.split(directory)[-1]
-        for checkpoint in glob.glob(os.path.join(directory, '*.t7')):
+        for checkpoint in sorted(glob.glob(os.path.join(directory, '*.t7')),
+                                 reverse=True):
             path, item = os.path.split(checkpoint)
             epoch, loss = item.lstrip('lm_lstm_epoch').rstrip('.t7').split('_')
             checkpoints.append({'brain_name': brain_name,
@@ -84,7 +85,8 @@ class GenerateCardsForm(Form):
                                            Required()])
     name = TextField(label="Name",
                      description='Add to the start of all card names. EX: Goblin')
-    # Supertype
+    supertypes = TextField(label="Super Types",
+                      description='Add to the start of all card super types. EX: Elite')
     types = TextField(label="Types",
                       description='Add to the start of all card types. EX: Enchantment')
     # Loyalty

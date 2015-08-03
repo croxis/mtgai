@@ -54,7 +54,8 @@ def create_card_img(card):
 
     image = img_manager.get_background(color)
     #font = ImageFont.truetype("fonts/matrixb.ttf", size=20)
-    font = ImageFont.truetype("fonts/MatrixBold.ttf", size=20)
+    #font = ImageFont.truetype("fonts/MatrixBold.ttf", size=20)
+    font = ImageFont.truetype("fonts/beleren-bold_P1.01.ttf", size=18)
     draw = ImageDraw.Draw(image)
 
     # Card costs
@@ -84,7 +85,8 @@ def create_card_img(card):
     if cost['colorless']:
         colorless_mana = img_manager.get_icon('colorless')
         draw_colorless = ImageDraw.Draw(colorless_mana)
-        draw_colorless.text((8, 4),
+        w, h = draw_colorless.textsize(str(cost['colorless']))
+        draw_colorless.text(((25-w) / 2 - 1, (25-h) / 2 - 4),
                             str(cost['colorless']),
                             fill=(0, 0, 0, 255),
                             font=font)
@@ -94,30 +96,31 @@ def create_card_img(card):
         colorless_mana.close()
 
     # Card texts
-    draw.text((35, 35),
+    w, h = draw.textsize(card.name.title())
+    draw.text((35, 38 - h / 2),
               # card.name.format(gatherer=True),
               card.name.title(),
               fill=(0, 0, 0, 255),
               font=font)
-    draw.text((35, 300), card.types[0].title(), fill=(0, 0, 0, 255), font=font)
+    w, h = draw_colorless.textsize(' '.join(card.types).title())
+    draw.text((35, 304-h/2),
+              ' '.join(card.types).title(),
+              fill=(0, 0, 0, 255),
+              font=font)
     # card_text = card.text.format()
     mtext = card.text.text
     mtext = transforms.text_unpass_1_choice(mtext, delimit=True)
     mtext = transforms.text_unpass_2_counters(mtext)
     mtext = transforms.text_unpass_3_unary(mtext)
     mtext = transforms.text_unpass_4_symbols(mtext, for_forum=False)
-    #mtext = transforms.text_unpass_4_symbols(mtext, for_forum=True)
     mtext = sentencecase(mtext)
     # We will do step 5 ourselves to keep capitalization
-    mtext = transforms.text_unpass_5_cardname(mtext, card.name)
+    mtext = transforms.text_unpass_5_cardname(mtext, card.name.title())
     mtext = transforms.text_unpass_6_newlines(mtext)
     new_text = Manatext('')
     new_text.text = mtext
     new_text.costs = card.text.costs
     card_text = new_text.format()
-    #card_text = card_text.capitalize() # Before we inset title to preserve title caps
-    #card_text = card_text.replace('@', card.name.title())
-    #card_text = card_text.replace('\\', '\n')
 
     lines = textwrap.wrap(card_text, 36, replace_whitespace=False)
     y_offset = 0
