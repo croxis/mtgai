@@ -38,7 +38,10 @@ def index_mtgai():
                                 seed=random_form.seed.data,
                                 primetext=random_form.primetext.data,
                                 length=random_form.length.data,
-                                temperature=random_form.temperature.data
+                                temperature=random_form.temperature.data,
+                                name=random_form.name.data,
+                                types=random_form.types.data,
+                                bodytext_prepend=random_form.bodytext_prepend.data
                                 ))
     if form.validate_on_submit():
         session['cardtext'] = form.body.data
@@ -60,7 +63,7 @@ def card_generate():
     length = int(request.args.get('length'))
     if length > app.config['LENGTH_LIMIT']:
         length = app.config['LENGTH_LIMIT']
-    command = ['th', 'sample_hs_v2.lua', checkpoint_path]
+    command = ['th', 'sample_hs_v2.lua', checkpoint_path, '-gpuid', str(app.config['GPU'])]
     if request.args.get('seed'):
         command.append('-seed')
         command.append(request.args.get('seed'))
