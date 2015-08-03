@@ -64,7 +64,8 @@ class GenerateCardsForm(Form):
                                  (os.path.join(b['brain_name'], b['file']),
                                   b['brain_name'] + ' epoch: ' + b[
                                       'epoch']) for b in
-                                 get_checkpoints_simple()])
+                                 get_checkpoints_simple()],
+                             description='Higher epoch is a smarter brain.')
     seed = IntegerField(label="Random seed", default=random.randint(0, 255))
     # sample = boolean
     primetext = TextField(label="Suggest",
