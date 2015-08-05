@@ -64,36 +64,37 @@ def create_card_img(card):
     x_offset = 0
     for x in range(0, cost['white']):
         image.paste(img_manager.get_icon('white'),
-                    (320 - x_offset, 42 - h // 2),
+                    (321 - x_offset, 42 - h // 2),
                     img_manager.get_icon('white'))
         x_offset += 23
     for x in range(0, cost['blue']):
         image.paste(img_manager.get_icon('blue'),
-                    (320 - x_offset, 42 - h // 2),
+                    (321 - x_offset, 42 - h // 2),
                     img_manager.get_icon('blue'))
         x_offset += 23
     for x in range(0, cost['black']):
-        image.paste(img_manager.get_icon('black'), (320 - x_offset, 42 - h // 2),
+        image.paste(img_manager.get_icon('black'), (321 - x_offset, 42 - h // 2),
                     img_manager.get_icon('blue'))
         x_offset += 23
     for x in range(0, cost['green']):
-        image.paste(img_manager.get_icon('green'), (320 - x_offset, 42 - h // 2),
+        image.paste(img_manager.get_icon('green'), (321 - x_offset, 42 - h // 2),
                     img_manager.get_icon('blue'))
         x_offset += 23
     for x in range(0, cost['red']):
-        image.paste(img_manager.get_icon('red'), (320 - x_offset, 42 - h // 2),
+        image.paste(img_manager.get_icon('red'), (321 - x_offset, 42 - h // 2),
                     img_manager.get_icon('blue'))
         x_offset += 23
     if cost['colorless']:
         colorless_mana = img_manager.get_icon('colorless')
         draw_colorless = ImageDraw.Draw(colorless_mana)
         w, h = draw_colorless.textsize(str(cost['colorless']))
-        draw_colorless.text(((25-w) // 2 - 2, (25-h) // 2 - 5),
+        W, H = colorless_mana.size
+        draw_colorless.text(((W-w) // 2 - 2, (H-h) // 2 - 5),
                             str(cost['colorless']),
                             fill=(0, 0, 0, 255),
                             font=font_title)
         image.paste(colorless_mana,
-                    (320 - x_offset, 36 - h // 2),
+                    (321 - x_offset, 36 - h // 2),
                     colorless_mana)
         colorless_mana.close()
 
@@ -131,7 +132,7 @@ def create_card_img(card):
     new_text.costs = card.text.costs
     card_text = new_text.format()
 
-    lines = textwrap.wrap(card_text, 40, replace_whitespace=False)
+    lines = textwrap.wrap(card_text, 38, replace_whitespace=False)
     y_offset = 0
     for line in lines:
         for sub_line in line.split('\n'):
@@ -207,7 +208,7 @@ def create_card_img(card):
                               'pt.jpg')
         image.paste(pt_image, (271, 461))
         draw.text((295, 470), power + " / " + toughness, fill=(0, 0, 0, 255),
-                  font=font)
+                  font=font_title)
 
     # Card image
     print("Starting terms")

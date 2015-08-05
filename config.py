@@ -1,4 +1,5 @@
 __author__ = 'croxis'
+import datetime
 import os
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -13,6 +14,7 @@ class Config:
     GENERATOR_PATH = '~/char-rnn-master/'
     GPU = -1  # Set to 0 if the machine will use the gpu to generate cards.
     LENGTH_LIMIT = 10000  # Limit number of characters generated.
+    PERMANENT_SESSION_LIFETIME = datetime.timedelta(seconds=3600)  # Store images for an hour
 
     @staticmethod
     def init_app(app):
