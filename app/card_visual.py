@@ -1,5 +1,6 @@
 __author__ = 'croxis'
 from io import BytesIO
+import random
 import re
 
 from PIL import Image, ImageDraw, ImageFont
@@ -132,7 +133,7 @@ def create_card_img(card):
     new_text.costs = card.text.costs
     card_text = new_text.format()
 
-    lines = textwrap.wrap(card_text, 38, replace_whitespace=False)
+    lines = textwrap.wrap(card_text, 37, replace_whitespace=False)
     y_offset = 0
     for line in lines:
         for sub_line in line.split('\n'):
@@ -177,7 +178,7 @@ def create_card_img(card):
                                 colorless_mana = img_manager.get_icon_text('colorless')
                                 draw_colorless = ImageDraw.Draw(colorless_mana)
                                 w, h = draw_colorless.textsize(str(subsub_line[1]))
-                                draw_colorless.text(((25-w) / 2, (25-h) / 2 - 3),
+                                draw_colorless.text(((18-w) / 2, (18-h) / 2 - 3),
                                                     str(subsub_line[1]),
                                                     fill=(0, 0, 0, 255),
                                                     font=font_title)
@@ -203,33 +204,40 @@ def create_card_img(card):
     if card.types[0].lower() == 'creature':
         power = str(card.pt_p.count('^'))
         toughness = str(card.pt_t.count('^'))
+        c = color[0]
+        if color.lower() == 'blue':
+            c = 'u'
         pt_image = Image.open('app/card_parts/magic-new.mse-style/' +
-                              color[0] +
+                              c +
                               'pt.jpg')
         image.paste(pt_image, (271, 461))
         draw.text((295, 470), power + " / " + toughness, fill=(0, 0, 0, 255),
                   font=font_title)
 
     # Card image
-    print("Starting terms")
     terms = magic_image.find_search_terms(card)
-    print("Search terms complete:", len(terms))
-    for term in terms:
-        print("Term:", term)
+    random.shuffle(terms)
+    img_url = None
+    for term in terms[:5]:
         color = term[-1]
         query = "+".join(term[:-1])
         if color == 'u':
             color = 'blue'
-        print("Fetching:", query + '+"fantasy"+paintings+-card', color)
         img_url = magic_image.fetch(query + '+"fantasy"+paintings+-card', color)
-        print("Img_URL:", img_url)
         if img_url:
             break
-    with BytesIO(requests.get(img_url).content) as reader:
-        reader.seek(0)
-        art = Image.open(reader)
-        art.thumbnail((311, 311))
+    if img_url:
+        with BytesIO(requests.get(img_url).content) as reader:
+            reader.seek(0)
+            art = Image.open(reader)
+            art.thumbnail((311, 311))
+            art = art.crop((0, 0, 311, 228))
+            w, h = art.size
+            image.paste(art, ((image.size[0] - w) // 2, 175-h//2))
+    else:
+        art = img_manager.default_portrait
         art = art.crop((0, 0, 311, 228))
-        image.paste(art, (32, 62))
+        w, h = art.size
+        image.paste(art, ((image.size[0] - w) // 2, 175-h//2))
 
     return image

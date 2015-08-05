@@ -47,6 +47,9 @@ class ImageManager:
         for icon in self.icons_text.values():
             icon.thumbnail((18, 18))
 
+        self.default_portrait = Image.open(os.path.join(root_path, 'Magic_the_gathering_pentagon.png'))
+        self.default_portrait.thumbnail((311, 311))
+
 
     def get_background(self, color):
         return self.cards[color].copy()
