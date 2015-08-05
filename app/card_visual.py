@@ -55,58 +55,67 @@ def create_card_img(card):
     image = img_manager.get_background(color)
     #font = ImageFont.truetype("fonts/matrixb.ttf", size=20)
     #font = ImageFont.truetype("fonts/MatrixBold.ttf", size=20)
-    font = ImageFont.truetype("fonts/beleren-bold_P1.01.ttf", size=18)
+    font_title = ImageFont.truetype("fonts/beleren-bold_P1.01.ttf", size=18)
+    font_type = ImageFont.truetype("fonts/beleren-bold_P1.01.ttf", size=16)
+    font = ImageFont.truetype("fonts/mplantin.ttf", size=18)
     draw = ImageDraw.Draw(image)
-
+    w, h = img_manager.get_icon('white').size
     # Card costs
-    y_offset = 0
+    x_offset = 0
     for x in range(0, cost['white']):
         image.paste(img_manager.get_icon('white'),
-                    (320 - y_offset, 29),
+                    (320 - x_offset, 42 - h // 2),
                     img_manager.get_icon('white'))
-        y_offset += 25
+        x_offset += 23
     for x in range(0, cost['blue']):
         image.paste(img_manager.get_icon('blue'),
-                    (320 - y_offset, 29),
+                    (320 - x_offset, 42 - h // 2),
                     img_manager.get_icon('blue'))
-        y_offset += 25
+        x_offset += 23
     for x in range(0, cost['black']):
-        image.paste(img_manager.get_icon('black'), (320 - y_offset, 29),
+        image.paste(img_manager.get_icon('black'), (320 - x_offset, 42 - h // 2),
                     img_manager.get_icon('blue'))
-        y_offset += 25
+        x_offset += 23
     for x in range(0, cost['green']):
-        image.paste(img_manager.get_icon('green'), (320 - y_offset, 29),
+        image.paste(img_manager.get_icon('green'), (320 - x_offset, 42 - h // 2),
                     img_manager.get_icon('blue'))
-        y_offset += 25
+        x_offset += 23
     for x in range(0, cost['red']):
-        image.paste(img_manager.get_icon('red'), (320 - y_offset, 29),
+        image.paste(img_manager.get_icon('red'), (320 - x_offset, 42 - h // 2),
                     img_manager.get_icon('blue'))
-        y_offset += 25
+        x_offset += 23
     if cost['colorless']:
         colorless_mana = img_manager.get_icon('colorless')
         draw_colorless = ImageDraw.Draw(colorless_mana)
         w, h = draw_colorless.textsize(str(cost['colorless']))
-        draw_colorless.text(((25-w) / 2 - 1, (25-h) / 2 - 4),
+        draw_colorless.text(((25-w) // 2 - 2, (25-h) // 2 - 5),
                             str(cost['colorless']),
                             fill=(0, 0, 0, 255),
-                            font=font)
+                            font=font_title)
         image.paste(colorless_mana,
-                    (320 - y_offset, 29),
+                    (320 - x_offset, 36 - h // 2),
                     colorless_mana)
         colorless_mana.close()
 
     # Card texts
     w, h = draw.textsize(card.name.title())
-    draw.text((35, 38 - h / 2),
+    draw.text((35, 38 - h // 2),
               # card.name.format(gatherer=True),
               card.name.title(),
               fill=(0, 0, 0, 255),
-              font=font)
-    w, h = draw_colorless.textsize(' '.join(card.types).title())
-    draw.text((35, 304-h/2),
-              ' '.join(card.types).title(),
-              fill=(0, 0, 0, 255),
-              font=font)
+              font=font_title)
+    if 'creature' in card.types:
+        w, h = draw.textsize(' '.join(card.types).title() + ' - ' + ' '.join(card.subtypes).title())
+        draw.text((35, 304-h//2),
+                  ' '.join(card.types).title() + ' - ' + ' '.join(card.subtypes).title(),
+                  fill=(0, 0, 0, 255),
+                  font=font_type)
+    else:
+        w, h = draw.textsize(' '.join(card.types).title())
+        draw.text((35, 304-h/2),
+                  ' '.join(card.types).title(),
+                  fill=(0, 0, 0, 255),
+                  font=font_type)
     # card_text = card.text.format()
     mtext = card.text.text
     mtext = transforms.text_unpass_1_choice(mtext, delimit=True)
@@ -122,7 +131,7 @@ def create_card_img(card):
     new_text.costs = card.text.costs
     card_text = new_text.format()
 
-    lines = textwrap.wrap(card_text, 36, replace_whitespace=False)
+    lines = textwrap.wrap(card_text, 40, replace_whitespace=False)
     y_offset = 0
     for line in lines:
         for sub_line in line.split('\n'):
@@ -132,50 +141,51 @@ def create_card_img(card):
                 if subsub_line:
                     if rg.match(subsub_line):
                         if '{w}' in subsub_line.lower():
-                            image.paste(img_manager.get_icon('white'),
-                                        (35 + x_offset, 335 + y_offset - 5),
-                                        img_manager.get_icon('blue'))
-                            x_offset += 25
+                            image.paste(img_manager.get_icon_text('white'),
+                                        (35 + x_offset, 335 + y_offset - 3),
+                                        img_manager.get_icon_text('blue'))
+                            x_offset += 21
                         elif '{b}' in subsub_line.lower():
-                            image.paste(img_manager.get_icon('black'),
-                                        (35 + x_offset, 335 + y_offset - 5),
-                                        img_manager.get_icon('blue'))
-                            x_offset += 25
+                            image.paste(img_manager.get_icon_text('black'),
+                                        (35 + x_offset, 335 + y_offset - 3),
+                                        img_manager.get_icon_text('blue'))
+                            x_offset += 21
                         elif '{u}' in subsub_line.lower():
-                            image.paste(img_manager.get_icon('blue'),
-                                        (35 + x_offset, 335 + y_offset - 5),
-                                        img_manager.get_icon('blue'))
-                            x_offset += 25
+                            image.paste(img_manager.get_icon_text('blue'),
+                                        (35 + x_offset, 335 + y_offset - 3),
+                                        img_manager.get_icon_text('blue'))
+                            x_offset += 21
                         elif '{r}' in subsub_line.lower():
-                            image.paste(img_manager.get_icon('red'),
-                                        (35 + x_offset, 335 + y_offset - 5),
-                                        img_manager.get_icon('blue'))
-                            x_offset += 25
+                            image.paste(img_manager.get_icon_text('red'),
+                                        (35 + x_offset, 335 + y_offset - 3),
+                                        img_manager.get_icon_text('blue'))
+                            x_offset += 21
                         elif '{g}' in subsub_line.lower():
-                            image.paste(img_manager.get_icon('green'),
-                                        (35 + x_offset, 335 + y_offset - 5),
-                                        img_manager.get_icon('blue'))
-                            x_offset += 25
+                            image.paste(img_manager.get_icon_text('green'),
+                                        (35 + x_offset, 335 + y_offset - 3),
+                                        img_manager.get_icon_text('blue'))
+                            x_offset += 21
                         elif '{t}' in subsub_line.lower():
-                            image.paste(img_manager.get_icon('tap'),
-                                        (35 + x_offset, 335 + y_offset - 5),
-                                        img_manager.get_icon('tap'))
-                            x_offset += 25
+                            image.paste(img_manager.get_icon_text('tap'),
+                                        (35 + x_offset, 335 + y_offset - 3),
+                                        img_manager.get_icon_text('tap'))
+                            x_offset += 21
                         else:
                             try:
                                 int(subsub_line[1])
-                                colorless_mana = img_manager.get_icon('colorless')
+                                colorless_mana = img_manager.get_icon_text('colorless')
                                 draw_colorless = ImageDraw.Draw(colorless_mana)
-                                draw_colorless.text((8, 4),
+                                w, h = draw_colorless.textsize(str(subsub_line[1]))
+                                draw_colorless.text(((25-w) / 2, (25-h) / 2 - 3),
                                                     str(subsub_line[1]),
                                                     fill=(0, 0, 0, 255),
-                                                    font=font)
+                                                    font=font_title)
 
                                 image.paste(colorless_mana,
-                                        (35 + x_offset, 335 + y_offset - 5),
+                                        (35 + x_offset, 335 + y_offset - 3),
                                         colorless_mana)
                                 colorless_mana.close()
-                                x_offset += 25
+                                x_offset += 21
                             except:
                                 pass
                     else:
@@ -200,14 +210,18 @@ def create_card_img(card):
                   font=font)
 
     # Card image
-    terms = magic_image.find_search_terms(card.encode())
-    print("Search terms:", terms)
+    print("Starting terms")
+    terms = magic_image.find_search_terms(card)
+    print("Search terms complete:", len(terms))
     for term in terms:
-        #color = term[-1]
+        print("Term:", term)
+        color = term[-1]
         query = "+".join(term[:-1])
         if color == 'u':
             color = 'blue'
+        print("Fetching:", query + '+"fantasy"+paintings+-card', color)
         img_url = magic_image.fetch(query + '+"fantasy"+paintings+-card', color)
+        print("Img_URL:", img_url)
         if img_url:
             break
     with BytesIO(requests.get(img_url).content) as reader:

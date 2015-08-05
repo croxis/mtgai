@@ -80,7 +80,7 @@ class GenerateCardsForm(Form):
                                       Required()])
     temperature = IntegerField(label="Temperature",
                                default=70,
-                               description="How adventerous the generator is. High number results in more creativity.",
+                               description="How adventurous the generator is. High number results in more creativity.",
                                validators=[NumberRange(min=0, max=200),
                                            Required()])
     name = TextField(label="Name",
@@ -90,10 +90,12 @@ class GenerateCardsForm(Form):
     types = TextField(label="Types",
                       description='Add to the start of all card types. EX: Enchantment')
     # Loyalty
-    # Subtypes
-    bodytext_prepend = TextField(label="Prepend body test",
-                                 description='Sdded to the start of the text sesction.')
-    # Bodytext append
+    subtypes = TextField(label="Subtypes",
+                      description='Add to the start of all card subtypes. EX: Bear')
+    bodytext_prepend = TextField(label="Prepend body text",
+                                 description='Added to the start of the text section.')
+    bodytext_append = TextField(label="Append body text",
+                                 description='Added to the end of the text section.')
 
 
 class SubmitCardsForm(Form):

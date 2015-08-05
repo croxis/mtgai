@@ -40,9 +40,11 @@ def index_mtgai():
                                 length=random_form.length.data,
                                 temperature=random_form.temperature.data,
                                 name=random_form.name.data,
+                                supertypes=random_form.supertypes.data,
                                 types=random_form.types.data,
+                                subtypes=random_form.subtypes.data,
                                 bodytext_prepend=random_form.bodytext_prepend.data,
-                                supertypes=random_form.supertypes.data
+                                bodytext_append=random_form.bodytext_append.data,
                                 ))
     if form.validate_on_submit():
         session['cardtext'] = form.body.data
@@ -81,10 +83,14 @@ def card_generate():
         command += ['-name', request.args.get('name')]
     if request.args.get('types'):
         command += ['-types', request.args.get('types')]
-    if request.args.get('types'):
+    if request.args.get('supertypes'):
         command += ['-supertypes', request.args.get('supertypes')]
+    if request.args.get('subtypes'):
+        command += ['-subtypes', request.args.get('subtypes')]
     if request.args.get('bodytext_prepend'):
         command += ['-bodytext_prepend', request.args.get('bodytext_prepend')]
+    if request.args.get('bodytext_append'):
+        command += ['-bodytext_append', request.args.get('bodytext_append')]
     session['cardtext'] = subprocess.check_output(command,
                                      cwd=os.path.expanduser(app.config['GENERATOR_PATH']),
                                      shell=False,

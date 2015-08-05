@@ -456,7 +456,7 @@ def text_unpass_2_counters(s):
         s = s.replace(countertypes[0], '')
         s = s.replace(counter_marker, countertype)
     
-    return s
+    return s.replace("uncast", "counter")
 
 
 def text_unpass_3_unary(s):

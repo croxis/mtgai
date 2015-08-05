@@ -1,7 +1,7 @@
 __author__ = 'Nafnlaus'
 CACHE_DIR = "/tmp/imgen"
 
-word_list = "creature|battlefield|artifact|library|magic|trample|flying|sacrifice|life|damage|vigilance|protection"
+word_list = "creature|battlefield|artifact|library|magic|trample|flying|sacrifice|life|damage|vigilance|protection|spirit|arcane"
 
 import re
 import sys
@@ -10,12 +10,9 @@ import os
 import time
 import random
 import math
-import hashlib
-import io
-import socket
+import urllib.parse
 
 import requests
-#from PIL import Image
 from requests.exceptions import ConnectionError
 
 from flask import request
@@ -34,99 +31,75 @@ def trim(list):
     s = []
     for i in list:
         if i not in s:
-            s.append(i)
+            if i:
+                s.append(i)
     return s
 
 
 def fetch(query, color):
+    query.replace(" ", "+")
     user_ip = request.remote_addr
+    if user_ip == '127.0.0.1':
+        user_ip = json.loads(requests.get("http://jsonip.com").text)["ip"]
     copyright_check = "&as_rights=(cc_publicdomain|cc_attribute|cc_sharealike|cc_noncommercial).-(cc_nonderived)"
+
     base_url = 'https://ajax.googleapis.com/ajax/services/search/images?' \
                'v=1.0&imgcolor=' + color + copyright_check + '&q=' + query + '&start=%d&userip=' + user_ip
     # base_url = 'https://www.googleapis.com/customsearch/v1?key=YOUR_API_KEY&cx=YOUR_CSE_ID&q=flower&searchType=image&fileType=jpg&imgSize=small&alt=json'
 
     start = 0  # Google's start query string parameter for pagination.
-    while start < 60:  # Google will only return a max of 56 results.
-        r = None
+    #while start < 60:  # Google will only return a max of 56 results.
+    if True:
+        r = requests.get(base_url % start)
+        time.sleep(1.5)
+        '''r = None
         for i in range(5):
+            print("URL:", base_url % start)
             r = requests.get(base_url % start)
+            start += 4  # 4 images per page.
+            time.sleep(1.5)
             if r:
-                break
+                break'''
         if r == None:
-            continue
+            #continue
+            return
         loads = None
         try:
             loads = json.loads(r.text)['responseData']['results']
         except TypeError:
-            continue
+            #continue
+            return
         if not loads:
-            continue
+            #continue
+            return
         for image_info in loads:
             url = image_info['unescapedUrl']
-            try:
-                #image_r = requests.get(url)
-                return url
-            except ConnectionError as e:
-                print('could not download %s' % url)
-                continue
-
-            # Remove file-system path characters from name.
-            '''file = open(TMP_FILE, 'w')
-            try:
-                Image.open(io.BytesIO(image_r.content)).save(file, 'JPEG')
-            except IOError as e:
-                # Throw away gifs
-                continue
-            file.close()
-
-            # Have we used this one before?
-            md5sum = hashlib.md5(open(TMP_FILE, 'rb').read()).hexdigest()
-            newpath = STORE_DIR + "/" + md5sum + ".jpg"
-            if os.path.exists(newpath):
-                os.unlink(TMP_FILE)  # Already used
-            else:
-                os.rename(TMP_FILE, newpath)
-                # Be nice to Google and they'll be nice back :)
-                time.sleep(1.5)
-                return newpath'''
-
-    start += 4  # 4 images per page.
+            return url
 
     # Be nice to Google and they'll be nice back :)
-    time.sleep(1.5)
+
 
     # No images found.
     return None
 
 
 def find_search_terms(card):
-    #print("Card:", card)
-    #words = card[0][:-1].lower().split("|")
-    words = card[:-1].lower().split("|")
-    #print("Words:", words)
-    mana = ""
-    if len(words) > 1:
-        mana = words[1]
-    words = words[0].split(" ")
+    mana = card.cost.format().lower()
+    card_text = card.text.text.replace("@", "").replace("\\", "").replace("$", "").replace(".", "").replace(',', '').replace(':', '')
+    words = list(filter(None, card_text.split(" ")))[:30]
     search_words0 = []
     for i in range(len(words)):
-        for j in range(len(words) - i):
+        for j in range(random.randint(0, len(words) - i)):
             search_words0.append(words[j:len(words) - i])
-    words = card[1][:-1].lower().split(" - ")
-    type = words[0].split(" ")
-    try:
-        words = words[1].split(" ")
-    except IndexError:
-        words = []
+    card_type = card.types
     search_words1 = []
     for i in range(len(words)):
-        for j in range(len(words) - i):
+        for j in range(random.randint(0,len(words) - i)):
             search_words1.append(words[j:len(words) - i])
-    if type != ["instant"] and type != ["enchantment"] and type != [
-        "creature"]:
-        search_words1.append(type)
+    search_words0.append(card_type)
+    search_words1.append(card_type)
     words = []
-    for line in card[2:]:
+    for line in card.text.text.split("\\"):
         words += re.findall(r"\b(" + word_list + r")\b",
                             line[:-1].lower().replace("creatures",
                                                       "creature").replace(
@@ -134,7 +107,7 @@ def find_search_terms(card):
                                                                    "magic"))
     search_words2 = words  # []
     colors = []
-    if type == "artifact":
+    if card_type == "artifact":
         colors.append("orange")
     if re.search("g", mana) and re.search("w", mana):
         colors.append("yellow")
@@ -182,9 +155,9 @@ def find_search_terms(card):
                             entry.append(k)
                             if len(entry) >= m:
                                 break
-                    search_terms.append(entry + [color])
-
-    search_terms = trim(search_terms)
+                    if len(entry) == m:
+                        search_terms.append(entry + [color])
+    search_terms = trim(search_terms[:1000])
 
     if len(search_terms) > 2:
         shift = int(math.sqrt(len(search_terms)) * 1.5) + 1
@@ -234,6 +207,7 @@ def find_search_terms(card):
     # print(search_terms)
 
     return search_terms
+
 
 if __name__ == "__main__":
     card = sys.stdin.readlines()
