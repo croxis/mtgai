@@ -72,11 +72,11 @@ def card_generate():
         command.append(request.args.get('seed'))
     if request.args.get('primetext'):
         command.append('-primetext')
-        command.append('"' + request.args.get('primetext') + '"')
+        command.append(request.args.get('primetext'))
     if request.args.get('length'):
         command.append('-length')
         command.append(str(length))
-    if request.args.get('temerature'):
+    if request.args.get('temperature'):
         command.append('-temperature')
         command.append(str(request.args.get('temperature')))
     if request.args.get('name'):

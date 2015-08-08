@@ -178,7 +178,7 @@ def create_card_img(card):
                                 colorless_mana = img_manager.get_icon_text('colorless')
                                 draw_colorless = ImageDraw.Draw(colorless_mana)
                                 w, h = draw_colorless.textsize(str(subsub_line[1]))
-                                draw_colorless.text(((18-w) / 2, (18-h) / 2 - 3),
+                                draw_colorless.text(((18-w) // 2, (18-h) // 2 - 3),
                                                     str(subsub_line[1]),
                                                     fill=(0, 0, 0, 255),
                                                     font=font_title)
