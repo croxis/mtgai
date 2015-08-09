@@ -132,7 +132,7 @@ def create_card_img(card):
     new_text.text = mtext
     new_text.costs = card.text.costs
     card_text = new_text.format()
-
+    print("Card text pre:", )
     lines = textwrap.wrap(card_text, 37, replace_whitespace=False)
     y_offset = 0
     for line in lines:
