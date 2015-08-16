@@ -9,7 +9,8 @@ COLORS = {'white': 'w',
           'green': 'g',
           'red': 'r',
           'colorless': 'c',
-          'artifact': 'a'}
+          'artifact': 'a',
+          'multicolor': 'm'}
 C = {v: k for k, v in COLORS.items()}
 
 

@@ -65,9 +65,9 @@ class GenerateCardsForm(Form):
                              choices=[
                                  (os.path.join(b['brain_name'], b['file']),
                                   b['brain_name'] + ' epoch: ' + b[
-                                      'epoch']) for b in
-                                 get_checkpoints_simple()],
-                             description='Higher epoch is a smarter brain.')
+                                      'epoch'] + ' loss: ' + b['loss']) for b
+                                 in get_checkpoints_simple()],
+                             description='Higher epoch and lower loss is a smarter brain.')
     seed = IntegerField(label="Random seed", default=random.randint(0, 255))
     # sample = boolean
     primetext = TextField(label="Suggest",
@@ -87,16 +87,17 @@ class GenerateCardsForm(Form):
     name = TextField(label="Name",
                      description='Add to the start of all card names. EX: Goblin')
     supertypes = TextField(label="Super Types",
-                      description='Add to the start of all card super types. EX: Elite')
+                           description='Add to the start of all card super types. EX: Elite')
     types = TextField(label="Types",
                       description='Add to the start of all card types. EX: Enchantment')
     # Loyalty
     subtypes = TextField(label="Subtypes",
-                      description='Add to the start of all card subtypes. EX: Bear')
+                         description='Add to the start of all card subtypes. EX: Bear')
+    rarity = TextField(label="Rarity", description='Card rarity.')
     bodytext_prepend = TextField(label="Prepend body text",
                                  description='Added to the start of the text section.')
     bodytext_append = TextField(label="Append body text",
-                                 description='Added to the end of the text section.')
+                                description='Added to the end of the text section.')
 
 
 class SubmitCardsForm(Form):

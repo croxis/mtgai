@@ -37,6 +37,7 @@ cmd:option('-supertypes',"",'added the start of the supertype section.')
 cmd:option('-types',"",'added to the start of the type section.')
 cmd:option('-loyalty',"",'added to the start of the loyalty section.')
 cmd:option('-subtypes',"",'added to the start of the type section.')
+cmd:option('-rarity',"",'added to the start of the rarity section.')
 cmd:option('-powertoughness',"",'added to the start of the power/toughness section. example: \"&^^/&^^^^\" ')
 cmd:option('-manacost',"",'added to the start of the mana cost section. example: \"{^^UUGGRR}\"')
 cmd:option('-bodytext_prepend',"",'added to the start of the text section.')
@@ -161,7 +162,7 @@ for i=1, opt.length do
     end
 
 
-    if not (string.len(opt.bodytext_append) > 0 and barcount == 9 and ivocab[prev_char[1]] == '|') then 
+    if not (string.len(opt.bodytext_append) > 0 and barcount == 10 and ivocab[prev_char[1]] == '|') then 
     	io.write(ivocab[prev_char[1]])
     end
 
@@ -180,12 +181,14 @@ for i=1, opt.length do
     elseif barcount == 5 then
 	prependtext = opt.subtypes
     elseif barcount == 6 then
-	prependtext = opt.powertoughness
+	prependtext = opt.rarity
     elseif barcount == 7 then
-	prependtext = opt.manacost
+	prependtext = opt.powertoughness
     elseif barcount == 8 then
-	prependtext = opt.bodytext_prepend
+	prependtext = opt.manacost
     elseif barcount == 9 then
+	prependtext = opt.bodytext_prepend
+    elseif barcount == 10 then
 	prependtext = opt.bodytext_append
     end
     end

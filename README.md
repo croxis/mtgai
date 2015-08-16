@@ -9,7 +9,7 @@ A site for creating MTG cards from a neural network AI.
 5. Clone this repository: `git clone https://github.com/croxis/mtgai.git`
 6. Change directory: `cd mtgai`
 7. Install dependencies: `pip install -r requirements.txt` You may need to use sudo if not using a virtual environment.
-8. Copy sample_hs_v2.lua in the lua directory to where the card generator directory is
+8. Copy sample_hs_v3.lua in the lua directory to where the card generator directory is
 
 ## Configure
 1. Open config.py with your favorite editor.

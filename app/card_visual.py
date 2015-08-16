@@ -48,14 +48,19 @@ def create_card_img(card):
             break
     else:
         color = 'artifact'
+    colors = 0
+    for key, value in cost.items():
+        if value:
+            colors += 1
+    if colors > 1:
+        color = 'multicolor'
+
     rg = re.compile('(\\d+)', re.IGNORECASE | re.DOTALL)
     m = rg.search(card.cost.format())
     if m:
         cost['colorless'] = int(m.group(1))
 
     image = img_manager.get_background(color)
-    #font = ImageFont.truetype("fonts/matrixb.ttf", size=20)
-    #font = ImageFont.truetype("fonts/MatrixBold.ttf", size=20)
     font_title = ImageFont.truetype("fonts/beleren-bold_P1.01.ttf", size=18)
     font_type = ImageFont.truetype("fonts/beleren-bold_P1.01.ttf", size=16)
     font = ImageFont.truetype("fonts/mplantin.ttf", size=18)
@@ -132,7 +137,6 @@ def create_card_img(card):
     new_text.text = mtext
     new_text.costs = card.text.costs
     card_text = new_text.format()
-    print("Card text pre:", )
     lines = textwrap.wrap(card_text, 37, replace_whitespace=False)
     y_offset = 0
     for line in lines:
@@ -201,18 +205,19 @@ def create_card_img(card):
     draw.text((60, 484), "Copy, right?", fill=(0, 0, 0, 255), font=font)
 
     # Creature power
-    if card.types[0].lower() == 'creature':
-        power = str(card.pt_p.count('^'))
-        toughness = str(card.pt_t.count('^'))
-        c = color[0]
-        if color.lower() == 'blue':
-            c = 'u'
-        pt_image = Image.open('app/card_parts/magic-new.mse-style/' +
-                              c +
-                              'pt.jpg')
-        image.paste(pt_image, (271, 461))
-        draw.text((295, 470), power + " / " + toughness, fill=(0, 0, 0, 255),
-                  font=font_title)
+    for card_type in card.types:
+        if card_type.lower() == 'creature':
+            power = str(card.pt_p.count('^'))
+            toughness = str(card.pt_t.count('^'))
+            c = color[0]
+            if color.lower() == 'blue':
+                c = 'u'
+            pt_image = Image.open('app/card_parts/magic-new.mse-style/' +
+                                  c +
+                                  'pt.jpg')
+            image.paste(pt_image, (271, 461))
+            draw.text((295, 470), power + " / " + toughness, fill=(0, 0, 0, 255),
+                      font=font_title)
 
     # Card image
     terms = magic_image.find_search_terms(card)

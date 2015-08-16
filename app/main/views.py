@@ -43,6 +43,7 @@ def index_mtgai():
                                 supertypes=random_form.supertypes.data,
                                 types=random_form.types.data,
                                 subtypes=random_form.subtypes.data,
+                                rarity=random_form.rarity.data,
                                 bodytext_prepend=random_form.bodytext_prepend.data,
                                 bodytext_append=random_form.bodytext_append.data,
                                 ))
@@ -66,7 +67,7 @@ def card_generate():
     length = int(request.args.get('length'))
     if length > app.config['LENGTH_LIMIT']:
         length = app.config['LENGTH_LIMIT']
-    command = ['th', 'sample_hs_v2.lua', checkpoint_path, '-gpuid', str(app.config['GPU'])]
+    command = ['th', 'sample_hs_v3.lua', checkpoint_path, '-gpuid', str(app.config['GPU'])]
     if request.args.get('seed'):
         command.append('-seed')
         command.append(request.args.get('seed'))
@@ -87,6 +88,8 @@ def card_generate():
         command += ['-supertypes', request.args.get('supertypes')]
     if request.args.get('subtypes'):
         command += ['-subtypes', request.args.get('subtypes')]
+    if request.args.get('rarity'):
+        command += ['-rarity', request.args.get('rarity')]
     if request.args.get('bodytext_prepend'):
         command += ['-bodytext_prepend', request.args.get('bodytext_prepend')]
     if request.args.get('bodytext_append'):
