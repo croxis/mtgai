@@ -3,7 +3,8 @@ import glob
 import os.path
 
 from flask_wtf import Form
-from wtforms import IntegerField, SelectField, SubmitField, TextField
+from wtforms import DecimalField, IntegerField, SelectField, SubmitField
+from wtforms import TextField
 from wtforms import TextAreaField
 from wtforms.validators import NumberRange, Required
 
@@ -78,9 +79,9 @@ class GenerateCardsForm(Form):
                           validators=[NumberRange(min=0, max=app.config[
                               'LENGTH_LIMIT']),
                                       Required()])
-    temperature = IntegerField(label="Temperature",
-                               default=70,
-                               description="How adventurous the generator is. High number results in more creativity.",
+    temperature = DecimalField(label="Temperature",
+                               default=0.7,
+                               description="0.0 -- 1.0 How adventurous the generator is. High number results in more creativity.",
                                validators=[NumberRange(min=0, max=200),
                                            Required()])
     name = TextField(label="Name",
