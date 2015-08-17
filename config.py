@@ -14,7 +14,11 @@ class Config:
     GENERATOR_PATH = '~/char-rnn-master'
     GPU = -1  # Set to 0 if the machine will use the gpu to generate cards.
     LENGTH_LIMIT = 10000  # Limit number of characters generated.
-    PERMANENT_SESSION_LIFETIME = datetime.timedelta(seconds=3600)  # Store images for an hour
+    # Store images for an hour
+    PERMANENT_SESSION_LIFETIME = datetime.timedelta(seconds=3600)
+    # If set the Magic Set Editor is an option for card rendering
+    # Set to '' or None to disable.
+    MSE_PATH = '~/.wine/drive_c/Program Files (x86)/Magic Set Editor 2/'
 
     @staticmethod
     def init_app(app):

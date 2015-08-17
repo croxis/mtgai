@@ -54,17 +54,20 @@ def get_checkpoints_options(force_add_dummy_brain = False):
          b['brain_name'] + ' epoch: ' + b[
              'epoch'] + ' loss: ' + b['loss']) for b
         in get_checkpoints_simple()]
-    if force_add_dummy_brain or len(options)==0:
-        options.append(("","Dummy Brain"))
+    if force_add_dummy_brain or len(options) == 0:
+        options.append(("", "Dummy Brain"))
     return options
 
 
 def get_render_modes():
-    return [
-        ("image","Card Image"),
-        ("image_searchless","Card Image-No Search"),
-        ("text","Pretty Text"),
-        ("","Raw")]
+    modes = [("image", "Card Image"),
+             ("image_searchless", "Card Image-No Search"),
+             ("text", "Pretty Text"),
+             ("", "Raw")]
+    if app.config['MSE_PATH']:
+        modes.insert(0, ('image_mse_searchless', 'Improved Card Images-No Search'))
+        modes.insert(0, ('image_mse', 'Improved Card Images'))
+    return modes
 
 
 class GenerateCardsForm(Form):
