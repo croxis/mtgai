@@ -33,7 +33,7 @@ except ImportError:
         return s.capitalize()
 
 
-def create_card_img(card):
+def create_card_img(card, google):
     # Cost calculation
     cost = {}
     cost['colorless'] = 0
@@ -222,6 +222,24 @@ def create_card_img(card):
                       font=font_title)
 
     # Card image
+    art, w, h = get_card_art(card, google)
+    image.paste(art, ((image.size[0] - w) // 2, 175-h//2))
+    return image
+
+def get_card_art(card, google):
+    if google:
+        google_result=google_card_art(card)
+        if google_result!=None:
+            return google_result
+    return get_default_card_art(card)
+
+def get_default_card_art(card):
+    art = img_manager.default_portrait
+    art = art.crop((0, 0, 311, 228))
+    w, h = art.size
+    return (art, w, h)
+
+def google_card_art(card):
     terms = magic_image.find_search_terms(card)
     random.shuffle(terms)
     img_url = None
@@ -240,11 +258,5 @@ def create_card_img(card):
             art.thumbnail((311, 311))
             art = art.crop((0, 0, 311, 228))
             w, h = art.size
-            image.paste(art, ((image.size[0] - w) // 2, 175-h//2))
-    else:
-        art = img_manager.default_portrait
-        art = art.crop((0, 0, 311, 228))
-        w, h = art.size
-        image.paste(art, ((image.size[0] - w) // 2, 175-h//2))
-
-    return image
+            return (art, w, h)
+    return None
