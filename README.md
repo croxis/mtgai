@@ -18,6 +18,6 @@ A site for creating MTG cards from a neural network AI.
 4. Change GENERATOR_PATH to point to the directory that houses sample.lua, train.lua, and the sample_hs_v2.lua file you just moves
 
 ## Test
-1. Run the server: `python3 manage.py runserver`
+1. Run the server: `python3 manage.py run`
 2. Point your favorite web browser to `http://localhost:5000` and cry over the sad state of the site.
 

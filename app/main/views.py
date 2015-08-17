@@ -9,19 +9,22 @@ import zipfile
 
 from flask import redirect, render_template, request, send_file, session, \
     url_for
+from flask.ext.socketio import emit
 import lib.cardlib as cardlib
 import lib.utils as utils
-from PIL import Image, ImageDraw
 from reportlab.lib.pagesizes import landscape, letter
 from reportlab.lib.utils import ImageReader
-from reportlab.pdfgen import canvas
 
 from . import main
 from ..card_visual import create_card_img
-from .. import app
+from .. import app, socketio
 from .forms import GenerateCardsForm, MoreOptionsForm, SubmitCardsForm, get_checkpoints_options
 
 
+@socketio.on('my event')                          # Decorator to catch an event called "my event":
+def test_message(message):                        # test_message() is the event callback function.
+    emit('my response', {'data': 'got it!'})      # Trigger a new event called "my response"
+                                                  # that can be caught by another callback later in the program.
 @main.route('/')
 def index():
     return redirect(url_for('.index_mtgai'))
