@@ -3,7 +3,7 @@ __author__ = 'croxis'
 from io import BytesIO
 import urllib.parse
 
-from flask import send_file
+from flask import send_file, request
 
 import lib.cardlib as cardlib
 
@@ -14,7 +14,11 @@ from ..card_visual import create_card_img
 @card_craft.route('/mtgai/card-craft/<path:raw>')
 def index(raw):
     card = create_card(urllib.parse.unquote(raw))
-    image = create_card_img(card)
+    if request.args.get('no-google'):
+        image = create_card_img(card, google=False)
+    else:
+        image = create_card_img(card, google=True)
+    image.show()
     byte_io = BytesIO()
     image.save(byte_io, 'PNG')
     byte_io.seek(0)
