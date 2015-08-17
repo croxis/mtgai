@@ -19,6 +19,11 @@ try:
     import nltk.data
     nltk.download('punkt')
     sent_tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
+    # This could me made smarter - MSE will capitalize for us after :,
+    # but we still need to capitalize the first english component of an activation
+    # cost that starts with symbols, such as {2U}, *R*emove a +1/+1 counter from @: etc.
+    def cap(s):
+        return s[:1].capitalize() + s[1:]
     # This crazy thing is actually invoked as an unpass, so newlines are still
     # encoded.
     def sentencecase(s):
@@ -28,11 +33,26 @@ try:
         for line in lines:
             if line:
                 sentences = sent_tokenizer.tokenize(line)
-                clines += [' '.join([sent.capitalize() for sent in sentences])]
+                clines += [' '.join([cap(sent) for sent in sentences])]
         return utils.newline.join(clines).replace(utils.reserved_marker, utils.x_marker)
 except ImportError:
+    # non-nltk implementation provided by PAK90
+    def uppercaseNewLineAndFullstop(string):
+        # ok, let's capitalize every letter after a full stop and newline. 
+        # first let's find all indices of '.' and '\n'
+        indices = [0] # initialise with 0, since we always want to capitalise the first letter.
+        newlineIndices = [0] # also need to keep track of pure newlines (for planeswalkers).
+        for i in range (len(string)):
+            if string[i] == '\\':
+                indices.append(i + 1) # we want the index of the letter after the \n, so add one.
+                newlineIndices.append(i + 1)
+            if string[i] == '.' or string[i] == "=": # also handle the choice bullets.
+                indices.append(i + 2) # we want the index of the letter after the ., so we need to count the space as well.
+        indexSet = set(indices) # convert it to a set for the next part; the capitalisation.
+        return "".join(c.upper() if i in indexSet else c for i, c in enumerate(string))
+
     def sentencecase(s):
-        return s
+        return uppercaseNewLineAndFullstop(s)
 
 # These are used later to determine what the fields of the Card object are called.
 # Define them here because they have nothing to do with the actual format.
@@ -111,6 +131,7 @@ def fields_check_valid(fields):
     else:
         return not field_pt in fields
 
+
 # These functions take a bunch of source data in some format and turn
 # it into nicely labeled fields that we know how to initialize a card from.
 # Both return a dict that maps field names to lists of possible values,
@@ -143,7 +164,7 @@ def fields_check_valid(fields):
 # layout - string
 # rarity - string
 # flavor - string
-# artis - string
+# artist - string
 # number - string
 # multiverseid - number
 # variations - list
@@ -329,7 +350,7 @@ class Card:
         self.raw = None
         # flags
         self.parsed = True
-        self.valid = True # only records broken pt right now (broken as in, no /)
+        self.valid = True # doesn't record that much
         # default values for all fields
         self.__dict__[field_name] = ''
         self.__dict__[field_rarity] = ''
@@ -354,6 +375,7 @@ class Card:
 
         # looks like a json object
         if isinstance(src, dict):
+            self.json = src
             if utils.json_field_bside in src:
                 self.bside = Card(src[utils.json_field_bside],
                                   fmt_ordered = fmt_ordered,
@@ -365,6 +387,7 @@ class Card:
             self.fields = parsed_fields
         # otherwise assume text encoding
         else:
+            self.raw = src
             sides = src.split(utils.bsidesep)
             if len(sides) > 1:
                 self.bside = Card(utils.bsidesep.join(sides[1:]), 
@@ -532,11 +555,11 @@ class Card:
 
         return outstr
 
-    def format(self, gatherer = False, for_forum = False):
+    def format(self, gatherer = False, for_forum = False, for_mse = False, vdump = False):
         outstr = ''
         if gatherer:
-            cardname = titlecase(self.__dict__[field_name])
-            if not cardname:
+            cardname = titlecase(transforms.name_unpass_1_dashes(self.__dict__[field_name]))
+            if vdump and not cardname:
                 cardname = '_NONAME_'
             if for_forum:
                 outstr += '[b]'
@@ -544,7 +567,9 @@ class Card:
             if for_forum:
                 outstr += '[/b]'
 
-            outstr += ' ' + self.__dict__[field_cost].format(for_forum = for_forum)
+            coststr = self.__dict__[field_cost].format(for_forum = for_forum)
+            if vdump or not coststr == '_NOCOST_':
+                outstr += ' ' + coststr
 
             if self.__dict__[field_rarity]:
                 if self.__dict__[field_rarity] in utils.json_rarity_unmap:
@@ -553,15 +578,16 @@ class Card:
                     rarity = self.__dict__[field_rarity]
                 outstr += ' (' + rarity + ')'
 
-            if not self.parsed:
-                outstr += ' _UNPARSED_'
-            if not self.valid:
-                outstr += ' _INVALID_'
+            if vdump:
+                if not self.parsed:
+                    outstr += ' _UNPARSED_'
+                if not self.valid:
+                    outstr += ' _INVALID_'
                 
             outstr += '\n'
 
             basetypes = map(str.capitalize, self.__dict__[field_types])
-            if len(basetypes) < 1:
+            if vdump and len(basetypes) < 1:
                 basetypes = ['_NOTYPE_']
             
             outstr += ' '.join(map(str.capitalize, self.__dict__[field_supertypes]) + basetypes)
@@ -582,11 +608,13 @@ class Card:
                 mtext = self.__dict__[field_text].text
                 mtext = transforms.text_unpass_1_choice(mtext, delimit = False)
                 mtext = transforms.text_unpass_2_counters(mtext)
-                mtext = transforms.text_unpass_3_unary(mtext)
-                mtext = transforms.text_unpass_4_symbols(mtext, for_forum)
+                #mtext = transforms.text_unpass_3_uncast(mtext)
+                mtext = transforms.text_unpass_4_unary(mtext)
+                mtext = transforms.text_unpass_5_symbols(mtext, for_forum)
                 mtext = sentencecase(mtext)
-                mtext = transforms.text_unpass_5_cardname(mtext, cardname)
-                mtext = transforms.text_unpass_6_newlines(mtext)
+                mtext = transforms.text_unpass_6_cardname(mtext, cardname)
+                mtext = transforms.text_unpass_7_newlines(mtext)
+                #mtext = transforms.text_unpass_8_unicode(mtext)
                 newtext = Manatext('')
                 newtext.text = mtext
                 newtext.costs = self.__dict__[field_text].costs
@@ -594,7 +622,7 @@ class Card:
             
                 outstr += '\n'
 
-            if self.__dict__[field_other]:
+            if vdump and self.__dict__[field_other]:
                 if for_forum:
                     outstr += '[i]'
                 else:
@@ -610,6 +638,9 @@ class Card:
 
         else:
             cardname = self.__dict__[field_name]
+            #cardname = transforms.name_unpass_1_dashes(self.__dict__[field_name])
+            if vdump and not cardname:
+                cardname = '_NONAME_'
             outstr += cardname
             if self.__dict__[field_rarity]:
                 if self.__dict__[field_rarity] in utils.json_rarity_unmap:
@@ -617,14 +648,17 @@ class Card:
                 else:
                     rarity = self.__dict__[field_rarity]
                 outstr += ' (' + rarity.lower() + ')'
-            if not self.parsed:
-                outstr += ' _UNPARSED_'
-            if not self.valid:
-                outstr += ' _INVALID_'
+            if vdump:
+                if not self.parsed:
+                    outstr += ' _UNPARSED_'
+                if not self.valid:
+                    outstr += ' _INVALID_'
             outstr += '\n'
             
-            outstr += self.__dict__[field_cost].format(for_forum = for_forum)
-            outstr += '\n'
+            coststr = self.__dict__[field_cost].format(for_forum = for_forum)
+            if vdump or not coststr == '_NOCOST_':
+                outstr += coststr
+                outstr += '\n'
 
             outstr += ' '.join(self.__dict__[field_supertypes] + self.__dict__[field_types])
             if self.__dict__[field_subtypes]:
@@ -635,10 +669,12 @@ class Card:
                 mtext = self.__dict__[field_text].text
                 mtext = transforms.text_unpass_1_choice(mtext, delimit = True)
                 #mtext = transforms.text_unpass_2_counters(mtext)
-                mtext = transforms.text_unpass_3_unary(mtext)
-                mtext = transforms.text_unpass_4_symbols(mtext, for_forum)
-                #mtext = transforms.text_unpass_5_cardname(mtext, cardname)
-                mtext = transforms.text_unpass_6_newlines(mtext)
+                #mtext = transforms.text_unpass_3_uncast(mtext)
+                mtext = transforms.text_unpass_4_unary(mtext)
+                mtext = transforms.text_unpass_5_symbols(mtext, for_forum)
+                #mtext = transforms.text_unpass_6_cardname(mtext, cardname)
+                mtext = transforms.text_unpass_7_newlines(mtext)
+                #mtext = transforms.text_unpass_8_unicode(mtext)
                 newtext = Manatext('')
                 newtext.text = mtext
                 newtext.costs = self.__dict__[field_text].costs
@@ -652,7 +688,7 @@ class Card:
                 outstr += '((' + utils.from_unary(self.__dict__[field_loyalty]) + '))'
                 outstr += '\n'
                 
-            if self.__dict__[field_other]:
+            if vdump and self.__dict__[field_other]:
                 outstr += utils.dash_marker * 2
                 outstr += '\n'
                 for idx, value in self.__dict__[field_other]:
@@ -665,6 +701,163 @@ class Card:
 
         return outstr
     
+    def to_mse(self, print_raw = False, vdump = False):
+        outstr = ''
+
+        # need a 'card' string first
+        outstr += 'card:\n'
+
+        cardname = titlecase(transforms.name_unpass_1_dashes(self.__dict__[field_name]))
+        outstr += '\tname: ' + cardname + '\n'
+
+        if self.__dict__[field_rarity]:
+            if self.__dict__[field_rarity] in utils.json_rarity_unmap:
+                rarity = utils.json_rarity_unmap[self.__dict__[field_rarity]]
+            else:
+                rarity = self.__dict__[field_rarity]
+            outstr += '\trarity: ' + rarity.lower() + '\n'
+
+        if not self.__dict__[field_cost].none:            
+            outstr += ('\tcasting cost: ' 
+                       + self.__dict__[field_cost].format().replace('{','').replace('}','') 
+                       + '\n')
+
+        outstr += '\tsuper type: ' + ' '.join(self.__dict__[field_supertypes] 
+                                              + self.__dict__[field_types]).title() + '\n'
+        if self.__dict__[field_subtypes]:
+            outstr += '\tsub type: ' + ' '.join(self.__dict__[field_subtypes]).title() + '\n'
+
+        if self.__dict__[field_pt]:
+            ptstring = utils.from_unary(self.__dict__[field_pt]).split('/')
+            if (len(ptstring) > 1): # really don't want to be accessing anything nonexistent.
+                outstr += '\tpower: ' + ptstring[0] + '\n'
+                outstr += '\ttoughness: ' + ptstring[1] + '\n'
+
+        if self.__dict__[field_text].text:
+            mtext = self.__dict__[field_text].text
+            mtext = transforms.text_unpass_1_choice(mtext, delimit = False)
+            mtext = transforms.text_unpass_2_counters(mtext)
+            mtext = transforms.text_unpass_3_uncast(mtext)
+            mtext = transforms.text_unpass_4_unary(mtext)
+            mtext = transforms.text_unpass_5_symbols(mtext, False)
+            mtext = sentencecase(mtext)
+            # I don't really want these MSE specific passes in transforms,
+            # but they could be pulled out separately somewhere else in here.
+            mtext = mtext.replace(utils.this_marker, '<atom-cardname><nospellcheck>'
+                                  + utils.this_marker + '</nospellcheck></atom-cardname>')
+            mtext = transforms.text_unpass_6_cardname(mtext, cardname)
+            mtext = transforms.text_unpass_7_newlines(mtext)
+            mtext = transforms.text_unpass_8_unicode(mtext)
+            newtext = Manatext('')
+            newtext.text = mtext
+            newtext.costs = self.__dict__[field_text].costs
+            newtext = newtext.format()
+
+            # See, the thing is, I think it's simplest and easiest to just leave it like this.
+            # What could possibly go wrong?
+            newtext = newtext.replace('{','<sym-auto>').replace('}','</sym-auto>')
+        else:
+            newtext = ''
+
+        # Annoying special case for bsides;
+        # This could be improved by having an intermediate function that returned
+        # all of the formatted fields in a data structure and a separate wrapper
+        # that actually packed them into the MSE format.
+        if self.bside:
+            newtext = newtext.replace('\n','\n\t\t')
+            outstr += '\trule text:\n\t\t' + newtext + '\n'
+
+            outstr += '\tstylesheet: new-split\n'
+
+            cardname2 = titlecase(transforms.name_unpass_1_dashes(
+                self.bside.__dict__[field_name]))
+
+            outstr += '\tname 2: ' + cardname2 + '\n'
+            if self.bside.__dict__[field_rarity]:
+                if self.bside.__dict__[field_rarity] in utils.json_rarity_unmap:
+                    rarity2 = utils.json_rarity_unmap[self.bside.__dict__[field_rarity]]
+                else:
+                    rarity2 = self.bside.__dict__[field_rarity]
+                outstr += '\trarity 2: ' + rarity2.lower() + '\n'
+
+            if not self.bside.__dict__[field_cost].none:            
+                outstr += ('\tcasting cost 2: ' 
+                           + self.bside.__dict__[field_cost].format()
+                           .replace('{','').replace('}','')
+                           + '\n')
+
+            outstr += ('\tsuper type 2: ' 
+                       + ' '.join(self.bside.__dict__[field_supertypes] 
+                                  + self.bside.__dict__[field_types]).title() + '\n')
+
+            if self.bside.__dict__[field_subtypes]:
+                outstr += ('\tsub type 2: ' 
+                           + ' '.join(self.bside.__dict__[field_subtypes]).title() + '\n')
+
+            if self.bside.__dict__[field_pt]:
+                ptstring2 = utils.from_unary(self.bside.__dict__[field_pt]).split('/')
+                if (len(ptstring2) > 1): # really don't want to be accessing anything nonexistent.
+                    outstr += '\tpower 2: ' + ptstring2[0] + '\n'
+                    outstr += '\ttoughness 2: ' + ptstring2[1] + '\n'
+
+            if self.bside.__dict__[field_text].text:
+                mtext2 = self.bside.__dict__[field_text].text
+                mtext2 = transforms.text_unpass_1_choice(mtext2, delimit = False)
+                mtext2 = transforms.text_unpass_2_counters(mtext2)
+                mtext2 = transforms.text_unpass_3_uncast(mtext2)
+                mtext2 = transforms.text_unpass_4_unary(mtext2)
+                mtext2 = transforms.text_unpass_5_symbols(mtext2, False)
+                mtext2 = sentencecase(mtext2)
+                mtext2 = mtext2.replace(utils.this_marker, '<atom-cardname><nospellcheck>'
+                                      + utils.this_marker + '</nospellcheck></atom-cardname>')
+                mtext2 = transforms.text_unpass_6_cardname(mtext2, cardname2)
+                mtext2 = transforms.text_unpass_7_newlines(mtext2)
+                mtext2 = transforms.text_unpass_8_unicode(mtext2)
+                newtext2 = Manatext('')
+                newtext2.text = mtext2
+                newtext2.costs = self.bside.__dict__[field_text].costs
+                newtext2 = newtext2.format()
+                newtext2 = newtext2.replace('{','<sym-auto>').replace('}','</sym-auto>')
+                newtext2 = newtext2.replace('\n','\n\t\t')
+                outstr += '\trule text 2:\n\t\t' + newtext2 + '\n'
+
+        # Need to do Special Things if it's a planeswalker.
+        # This code mostly works, but it won't get quite the right thing if the planeswalker
+        # abilities don't come before any other ones. Should be fixed.
+        elif "planeswalker" in str(self.__dict__[field_types]):
+            outstr += '\tstylesheet: m15-planeswalker\n'
+
+            # set up the loyalty cost fields using regex to find how many there are.
+            i = 0
+            lcost_regex = r'[-+]?\d+: ' # 1+ figures, might be 0.
+            for lcost in re.findall(lcost_regex, newtext):
+                i += 1
+                outstr += '\tloyalty cost ' + str(i) + ': ' + lcost + '\n'
+            # sub out the loyalty costs.
+            newtext = re.sub(lcost_regex, '', newtext)
+
+            # We need to uppercase again, because MSE won't magically capitalize for us
+            # like it does after semicolons.
+            # Abusing passes like this is terrible, should really fix sentencecase.
+            newtext = transforms.text_pass_9_newlines(newtext)
+            newtext = sentencecase(newtext)
+            newtext = transforms.text_unpass_7_newlines(newtext)
+
+            if self.__dict__[field_loyalty]:
+                outstr += '\tloyalty: ' + utils.from_unary(self.__dict__[field_loyalty]) + '\n'
+
+            newtext = newtext.replace('\n','\n\t\t')
+            outstr += '\trule text:\n\t\t' + newtext + '\n'
+
+        else:
+            newtext = newtext.replace('\n','\n\t\t')
+            outstr += '\trule text:\n\t\t' + newtext + '\n'
+
+        # now append all the other useless fields that the setfile expects.
+        outstr += '\thas styling: false\n\ttime created:2015-07-20 22:53:07\n\ttime modified:2015-07-20 22:53:08\n\textra data:\n\timage:\n\tcard code text:\n\tcopyright:\n\timage 2:\n\tcopyright 2:\n\tnotes:'
+
+        return outstr
+
     def vectorize(self):
         ld = '('
         rd = ')'
