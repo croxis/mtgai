@@ -5,9 +5,11 @@ import json
 import os
 import subprocess
 import urllib.parse
+import zipfile
 
 from flask import redirect, render_template, request, send_file, session, url_for
 import lib.cardlib as cardlib
+import lib.utils as utils
 from PIL import Image, ImageDraw
 from reportlab.lib.pagesizes import landscape, letter
 from reportlab.lib.utils import ImageReader
@@ -16,8 +18,7 @@ from reportlab.pdfgen import canvas
 from . import main
 from ..card_visual import create_card_img
 from .. import app
-from .forms import GenerateCardsForm, PrintCardsForm, SubmitCardsForm, get_checkpoints_options
-
+from .forms import GenerateCardsForm, MoreOptionsForm, SubmitCardsForm, get_checkpoints_options
 
 @main.route('/')
 def index():
@@ -123,13 +124,17 @@ def card_select():
         extra_template_data={}
         if session["do_images"]:
             extra_template_data['urls'] = convert_to_urls(session['cardtext'], cardsep=session['cardsep'])
-        if session["can_print"]:
-            extra_template_data['form'] = PrintCardsForm()
         if session["do_text"]:
             extra_template_data['text'] = convert_to_text(session['cardtext'], cardsep=session['cardsep'])
+        extra_template_data['form'] = MoreOptionsForm(can_print=session["can_print"], can_mse_set=session["can_mse_set"])
         if session["can_print"]:
             if extra_template_data['form'].validate_on_submit():
-                return redirect(url_for('.print_cards'))
+                if extra_template_data['form'].print_button.data:
+                    return redirect(url_for('.print_cards'))
+        if session["can_mse_set"]:
+            if extra_template_data['form'].validate_on_submit():
+                if extra_template_data['form'].mse_set_button.data:
+                    return redirect(url_for('.download_mse_set'))
         return render_template(session["render_template"], **extra_template_data)
 
 
@@ -137,6 +142,7 @@ def use_render_mode(render_mode):
     session["do_images"]=False
     session["do_text"]=False
     session["can_print"]=False
+    session["can_mse_set"]=True
     if render_mode=="image":
         session["do_images"]=True
         session["do_google"]=True
@@ -155,6 +161,21 @@ def use_render_mode(render_mode):
     else:
         session["render_template"]='card_select_raw_only.html'
 
+@main.route('/mtgai/download-mse-set', methods=['GET', 'POST'])
+def download_mse_set():
+    set_text = b''
+    cards = convert_to_cards(session['cardtext'])
+    zipped_bytes = BytesIO()
+    set_text+=(utils.mse_prepend.encode())
+    for card in cards:
+        set_text+=card.to_mse().encode('utf-8')
+        set_text+=b'\n'
+    set_text+=b'version control:\n\ttype: none\napprentice code: '
+    zipped=zipfile.ZipFile(zipped_bytes, mode='w')
+    zipped.writestr('set',set_text)
+    zipped.close()
+    zipped_bytes.seek(0)
+    return send_file(zipped_bytes, mimetype='application/zip', as_attachment=True, attachment_filename = "nn-set.mse-set")
 
 @main.route('/mtgai/print', methods=['GET', 'POST'])
 def print_cards():
@@ -211,10 +232,7 @@ def convert_to_cards(text, cardsep='\r\n\r\n'):
     cards = []
     for card_src in text.split(cardsep):
         if card_src:
-            print(card_src)
             card = cardlib.Card(card_src)
-            print(card)
-            
             if card.valid:
                 cards.append(card)
     return cards
