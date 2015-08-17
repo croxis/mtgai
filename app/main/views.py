@@ -19,8 +19,7 @@ from reportlab.pdfgen import canvas
 from . import main
 from ..card_visual import create_card_img
 from .. import app
-from .forms import GenerateCardsForm, PrintCardsForm, SubmitCardsForm, \
-    get_checkpoints_options
+from .forms import GenerateCardsForm, MoreOptionsForm, SubmitCardsForm, get_checkpoints_options
 
 
 @main.route('/')

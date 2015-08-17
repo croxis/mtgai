@@ -184,7 +184,7 @@ def create_card_img(card, google):
                                 colorless_mana = img_manager.get_icon_text('colorless')
                                 draw_colorless = ImageDraw.Draw(colorless_mana)
                                 w, h = draw_colorless.textsize(str(subsub_line[1]))
-                                draw_colorless.text(((18-w) // 2 - 2, (18-h) // 2),
+                                draw_colorless.text(((18-w) // 2 - 2, (18-h) // 2 - 4),
                                                     str(subsub_line[1]),
                                                     fill=(0, 0, 0, 255),
                                                     font=font_title)
@@ -259,7 +259,7 @@ def google_card_art(card):
             reader.seek(0)
             art = Image.open(reader)
             art.thumbnail((311, 311))
-            art = art.crop((0, 0, 311, 228))
+            art = art.crop((0, 0, 311, 229))
             w, h = art.size
             return (art, w, h)
     return None
