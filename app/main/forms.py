@@ -49,6 +49,20 @@ def get_checkpoints_simple():
                                 'file': item})
     return checkpoints
 
+def get_checkpoints_options():
+    return [("None","Dummy Brain")]
+    return [
+        (os.path.join(b['brain_name'], b['file']),
+         b['brain_name'] + ' epoch: ' + b[
+             'epoch'] + ' loss: ' + b['loss']) for b
+        in get_checkpoints_simple()]
+
+def get_render_modes():
+    return [
+        ("","Raw"),
+        ("image","Card Image"),
+        ("image_searchless","Card Image-No Search"),
+        ("text","Pretty Text")]
 
 class GenerateCardsForm(Form):
     submit = SubmitField("Generate")
@@ -62,11 +76,7 @@ class GenerateCardsForm(Form):
                                            'epoch']) for b in
                                       get_checkpoints_simple()])'''
     checkpoint = SelectField(label="Checkpoint",
-                             choices=[
-                                 (os.path.join(b['brain_name'], b['file']),
-                                  b['brain_name'] + ' epoch: ' + b[
-                                      'epoch'] + ' loss: ' + b['loss']) for b
-                                 in get_checkpoints_simple()],
+                             choices=get_checkpoints_options(),
                              description='Higher epoch and lower loss is a smarter brain.')
     seed = IntegerField(label="Random seed", default=random.randint(0, 255))
     # sample = boolean
@@ -93,16 +103,28 @@ class GenerateCardsForm(Form):
     # Loyalty
     subtypes = TextField(label="Subtypes",
                          description='Add to the start of all card subtypes. EX: Bear')
-    rarity = TextField(label="Rarity", description='Card rarity.')
+    rarity = SelectField(label="Rarity",
+                         choices=[("","Any"),
+                                  ("O","Common"),
+                                  ("N","Uncommon"),
+                                  ("A","Rare"),
+                                  ("Y","Mythic")],
+                         description='Card rarity.')
     bodytext_prepend = TextField(label="Prepend body text",
                                  description='Added to the start of the text section.')
     bodytext_append = TextField(label="Append body text",
                                 description='Added to the end of the text section.')
+    render_mode = SelectField(label="Render Mode",
+                         choices=get_render_modes(),
+                         description='Mode for rendering.')
 
 
 class SubmitCardsForm(Form):
     body = TextAreaField("Copy and paste card data here.",
                          validators=[Required()])
+    render_mode = SelectField(label="Render Mode",
+                         choices=get_render_modes(),
+                         description='Mode for rendering.')
     submit = SubmitField("Submit")
 
 

@@ -16,7 +16,7 @@ from reportlab.pdfgen import canvas
 from . import main
 from ..card_visual import create_card_img
 from .. import app
-from .forms import GenerateCardsForm, PrintCardsForm, SubmitCardsForm, get_checkpoints_simple
+from .forms import GenerateCardsForm, PrintCardsForm, SubmitCardsForm, get_checkpoints_options
 
 
 @main.route('/')
@@ -27,10 +27,7 @@ def index():
 @main.route('/mtgai', methods=['GET', 'POST'])
 def index_mtgai():
     random_form = GenerateCardsForm()
-    random_form.checkpoint.choices = [(os.path.join(b['brain_name'], b['file']),
-                                       b['brain_name'] + ' epoch: ' + b[
-                                           'epoch']) for b in
-                                      get_checkpoints_simple()]
+    random_form.checkpoint.choices = get_checkpoints_options()
     form = SubmitCardsForm()
     if random_form.validate_on_submit():
         return redirect(url_for('.card_generate',
@@ -46,10 +43,13 @@ def index_mtgai():
                                 rarity=random_form.rarity.data,
                                 bodytext_prepend=random_form.bodytext_prepend.data,
                                 bodytext_append=random_form.bodytext_append.data,
+                                render_mode=random_form.render_mode.data,
                                 ))
     if form.validate_on_submit():
         session['cardtext'] = form.body.data
         session['cardsep'] = '\r\n\r\n'
+        session['mode'] = "existing"
+        session['render_mode'] = form.render_mode.data
         return redirect(url_for('.card_select'))
     return render_template('index.html',
                            current_time=datetime.utcnow(),
@@ -62,12 +62,18 @@ def index_mtgai():
 #@main.route('/mtgai/card-generate/<path>/<seed>/<primetext>/<length>/<temperature>')
 @main.route('/mtgai/card-generate/')
 def card_generate():
-    checkpoint_path = os.path.join(os.path.expanduser(app.config['SNAPSHOTS_PATH']),
-                                   request.args.get('checkpoint_path'))
+    checkpoint_option=request.args.get('checkpoint_path')
+    do_nn=checkpoint_option!="None"
+    if do_nn:
+        checkpoint_path = os.path.join(os.path.expanduser(app.config['SNAPSHOTS_PATH']),
+                                       checkpoint_option)
     length = int(request.args.get('length'))
     if length > app.config['LENGTH_LIMIT']:
         length = app.config['LENGTH_LIMIT']
-    command = ['th', 'sample_hs_v3.lua', checkpoint_path, '-gpuid', str(app.config['GPU'])]
+    if do_nn:
+        command = ['th', 'sample_hs_v3.lua', checkpoint_path, '-gpuid', str(app.config['GPU'])]
+    else:
+        command = ['-gpuid', str(app.config['GPU'])]
     if request.args.get('seed'):
         command.append('-seed')
         command.append(request.args.get('seed'))
@@ -94,22 +100,60 @@ def card_generate():
         command += ['-bodytext_prepend', request.args.get('bodytext_prepend')]
     if request.args.get('bodytext_append'):
         command += ['-bodytext_append', request.args.get('bodytext_append')]
-    session['cardtext'] = subprocess.check_output(command,
-                                     cwd=os.path.expanduser(app.config['GENERATOR_PATH']),
-                                     shell=False,
-                                     stderr=subprocess.STDOUT).decode()
-    session['cardsep'] = '\n\n'
+    if do_nn:
+        session['mode']="nn"
+        session['cardtext'] = subprocess.check_output(command,
+                                         cwd=os.path.expanduser(app.config['GENERATOR_PATH']),
+                                         shell=False,
+                                         stderr=subprocess.STDOUT).decode()
+        session['cardsep'] = '\n\n'
+        session['render_mode'] = request.args.get('render_mode')
+    else:
+        session['mode']="dummy"
+        session['command'] = " ".join(command)
     return redirect(url_for('.card_select'))
 
 
 @main.route('/mtgai/card-select', methods=['GET', 'POST'])
 def card_select():
-    urls = convert_to_urls(session['cardtext'], cardsep=session['cardsep'])
-    form = PrintCardsForm()
-    if form.validate_on_submit():
-        return redirect(url_for('.print_cards'))
-    return render_template('card_select.html', form=form, urls=urls)
+    if session['mode']=="dummy":
+        print(session['command'])
+        return render_template('nn_dummy.html', command=session['command'])
+    else:
+        use_render_mode(session["render_mode"])
+        extra_template_data={}
+        if session["do_images"]:
+            extra_template_data['urls'] = convert_to_urls(session['cardtext'], cardsep=session['cardsep'])
+        if session["can_print"]:
+            extra_template_data['form'] = PrintCardsForm()
+        if session["do_text"]:
+            extra_template_data['text'] = convert_to_text(session['cardtext'], cardsep=session['cardsep'])
+        if session["can_print"]:
+            if extra_template_data['form'].validate_on_submit():
+                return redirect(url_for('.print_cards'))
+        return render_template(session["render_template"], **extra_template_data)
 
+def use_render_mode(render_mode):
+    session["do_images"]=False
+    session["do_text"]=False
+    session["can_print"]=False
+    if render_mode=="image":
+        session["do_images"]=True
+        session["do_google"]=True
+        session["can_print"]=True
+        session["image_extra_params"]=""
+        session["render_template"]='card_select_image.html'
+    elif render_mode=="image_searchless":
+        session["do_images"]=True
+        session["do_google"]=False
+        session["can_print"]=True
+        session["image_extra_params"]="?no-google=True"
+        session["render_template"]='card_select_image_no_google.html'
+    elif render_mode=="text":
+        session["do_text"]=True
+        session["render_template"]='card_select_text.html'
+    else:
+        session["render_template"]='card_select_raw_only.html'
 
 @main.route('/mtgai/print', methods=['GET', 'POST'])
 def print_cards():
@@ -129,7 +173,7 @@ def print_cards():
     WIDTH, HEIGHT = landscape(letter)
     #draw = ImageDraw.Draw(sheet)
     for card in cards:
-        image = create_card_img(card)
+        image = create_card_img(card,session["do_google"])
         image_reader = ImageReader(image)
         canvas.drawImage(image_reader,
                          x_offset,
@@ -155,7 +199,7 @@ def convert_to_urls(card_text, cardsep='\r\n\r\n'):
         if card_src:
             card = cardlib.Card(card_src)
             if card.valid:
-                urls.append(urllib.parse.quote(card_src, safe=''))
+                urls.append(urllib.parse.quote(card_src, safe='')+session["image_extra_params"])
 
     return urls
 
@@ -166,7 +210,18 @@ def convert_to_cards(text, cardsep='\r\n\r\n'):
     cards = []
     for card_src in text.split(cardsep):
         if card_src:
+            print(card_src)
             card = cardlib.Card(card_src)
+            print(card)
+            
             if card.valid:
                 cards.append(card)
     return cards
+
+def convert_to_text(text, cardsep='\r\n\r\n'):
+    cards=convert_to_cards(text,cardsep)
+    text=[]
+    for card in cards:
+        text.extend(card.format().split('\n'))
+        text.append("------------------------")
+    return text[:-1]

@@ -2,19 +2,15 @@
 {% import "bootstrap/wtf.html" as wtf %}
 
 {% block content %}
-<div class="container">
-<h4>Now searching the internet for nifty pictures. This can take a while too.</h4>
-</div>
-<div class="container">
-{{ wtf.quick_form(form) }}
-</div>
 <div class="container-fluid">
-    {% for card in cards %}
-    <div class="col-md-4">
-        {#{ card.format(gatherer=False, for_forum=False) }#}
-        <img style="padding:3px;" src="card-craft/{{ url }}">
+    <div class="panel panel-primary">
+        <div class="panel-heading">Card text</div>
+		{% for line in text %}
+		<div>
+			{{ line }}
+		</div>
+		{% endfor %}
     </div>
-    {% endfor %}
 </div>
 <div class="container-fluid">
     <div class="panel panel-primary">

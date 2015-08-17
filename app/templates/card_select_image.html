@@ -9,7 +9,7 @@
 {{ wtf.quick_form(form) }}
 </div>
 <div class="container-fluid">
-    {% for card in cards %}
+    {% for url in urls %}
     <div class="col-md-4">
         {#{ card.format(gatherer=False, for_forum=False) }#}
         <img style="padding:3px;" src="card-craft/{{ url }}">
