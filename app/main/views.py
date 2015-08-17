@@ -29,7 +29,8 @@ def index_mtgai():
     random_form = GenerateCardsForm()
     random_form.checkpoint.choices = [(os.path.join(b['brain_name'], b['file']),
                                        b['brain_name'] + ' epoch: ' + b[
-                                           'epoch']) for b in
+                                           'epoch'] + ' loss: ' + b[
+                                           'loss']) for b in
                                       get_checkpoints_simple()]
     form = SubmitCardsForm()
     if random_form.validate_on_submit():
