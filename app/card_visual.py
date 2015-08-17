@@ -226,18 +226,21 @@ def create_card_img(card, google):
     image.paste(art, ((image.size[0] - w) // 2, 175-h//2))
     return image
 
+
 def get_card_art(card, google):
     if google:
         google_result=google_card_art(card)
-        if google_result!=None:
+        if google_result != None:
             return google_result
     return get_default_card_art(card)
+
 
 def get_default_card_art(card):
     art = img_manager.default_portrait
     art = art.crop((0, 0, 311, 228))
     w, h = art.size
     return (art, w, h)
+
 
 def google_card_art(card):
     terms = magic_image.find_search_terms(card)

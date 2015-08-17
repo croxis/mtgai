@@ -18,7 +18,6 @@ def index(raw):
         image = create_card_img(card, google=False)
     else:
         image = create_card_img(card, google=True)
-    image.show()
     byte_io = BytesIO()
     image.save(byte_io, 'PNG')
     byte_io.seek(0)

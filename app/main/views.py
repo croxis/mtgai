@@ -108,19 +108,19 @@ def card_generate():
         session['cardsep'] = '\n\n'
         session['render_mode'] = request.args.get('render_mode')
     else:
-        session['mode']="dummy"
+        session['mode'] = "dummy"
         session['command'] = " ".join(command)
     return redirect(url_for('.card_select'))
 
 
 @main.route('/mtgai/card-select', methods=['GET', 'POST'])
 def card_select():
-    if session['mode']=="dummy":
+    if session['mode'] == "dummy":
         print(session['command'])
         return render_template('nn_dummy.html', command=session['command'])
     else:
         use_render_mode(session["render_mode"])
-        extra_template_data={}
+        extra_template_data = {}
         if session["do_images"]:
             extra_template_data['urls'] = convert_to_urls(session['cardtext'], cardsep=session['cardsep'])
         if session["can_print"]:

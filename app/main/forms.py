@@ -10,8 +10,6 @@ from wtforms.validators import NumberRange, Required
 
 from .. import app
 
-__author__ = 'croxis'
-
 
 def get_checkpoints():
     checkpoints = {}
@@ -49,6 +47,7 @@ def get_checkpoints_simple():
                                 'file': item})
     return checkpoints
 
+
 def get_checkpoints_options(force_add_dummy_brain = False):
     options= [
         (os.path.join(b['brain_name'], b['file']),
@@ -59,24 +58,20 @@ def get_checkpoints_options(force_add_dummy_brain = False):
         options.append(("","Dummy Brain"))
     return options
 
+
 def get_render_modes():
     return [
-        ("","Raw"),
         ("image","Card Image"),
         ("image_searchless","Card Image-No Search"),
-        ("text","Pretty Text")]
+        ("text","Pretty Text"),
+        ("","Raw")]
+
 
 class GenerateCardsForm(Form):
     submit = SubmitField("Generate")
-    '''brain = SelectField(label="Brain",
-                        choices=[(b, b) for b in get_checkpoints().keys()])
-    checkpoint = SelectField(label="Checkpoint",
-                             choices=[(c['epoch'], c['epoch']) for c in get_checkpoints()[b] for b in get_checkpoints().keys()])'''
-    '''checkpoint = SelectField(label="Checkpoint",
-                             choices=[(b['path'],
-                                       b['brain_name'] + ' epoch: ' + b[
-                                           'epoch']) for b in
-                                      get_checkpoints_simple()])'''
+    render_mode = SelectField(label="Render Mode",
+                         choices=get_render_modes(),
+                         description='Mode for rendering.')
     checkpoint = SelectField(label="Checkpoint",
                              choices=get_checkpoints_options(),
                              description='Higher epoch and lower loss is a smarter brain.')
@@ -116,9 +111,6 @@ class GenerateCardsForm(Form):
                                  description='Added to the start of the text section.')
     bodytext_append = TextField(label="Append body text",
                                 description='Added to the end of the text section.')
-    render_mode = SelectField(label="Render Mode",
-                         choices=get_render_modes(),
-                         description='Mode for rendering.')
 
 
 class SubmitCardsForm(Form):
