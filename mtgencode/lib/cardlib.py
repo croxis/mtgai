@@ -15,7 +15,9 @@ except ImportError:
 
 try:
     import textwrap
+    import nltk
     import nltk.data
+    nltk.download('punkt')
     sent_tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
     # This crazy thing is actually invoked as an unpass, so newlines are still
     # encoded.
