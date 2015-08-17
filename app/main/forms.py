@@ -49,13 +49,15 @@ def get_checkpoints_simple():
                                 'file': item})
     return checkpoints
 
-def get_checkpoints_options():
-    return [("None","Dummy Brain")]
-    return [
+def get_checkpoints_options(force_add_dummy_brain = False):
+    options= [
         (os.path.join(b['brain_name'], b['file']),
          b['brain_name'] + ' epoch: ' + b[
              'epoch'] + ' loss: ' + b['loss']) for b
         in get_checkpoints_simple()]
+    if force_add_dummy_brain or len(options)==0:
+        options.append(("","Dummy Brain"))
+    return options
 
 def get_render_modes():
     return [
