@@ -2,6 +2,9 @@
 {% import "bootstrap/wtf.html" as wtf %}
 
 {% block content %}
+<div class="container">
+{{ wtf.quick_form(form) }}
+</div>
 <div class="container-fluid">
     <div class="panel panel-primary">
         <div class="panel-heading">Raw text</div>

@@ -125,5 +125,6 @@ class SubmitCardsForm(Form):
     submit = SubmitField("Submit")
 
 
-class PrintCardsForm(Form):
-    submit = SubmitField("Print")
+class MoreOptionsForm(Form):
+    print_button = SubmitField("Print")
+    mse_set_button = SubmitField("Download MSE Set")
