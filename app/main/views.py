@@ -60,7 +60,6 @@ def index_mtgai():
                            title='MTG Automatic Inventor (MTGAI)')
 
 
-#@main.route('/mtgai/card-generate/<path>/<seed>/<primetext>/<length>/<temperature>')
 @main.route('/mtgai/card-generate/')
 def card_generate():
     checkpoint_path = os.path.join(os.path.expanduser(app.config['SNAPSHOTS_PATH']),

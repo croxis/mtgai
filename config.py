@@ -10,7 +10,7 @@ class Config:
         'SECRET_KEY') or 'a string that is hard to velociraptor'
     WTF_CSRF_SECRET_KEY = os.environ.get(
         'WTF_CSRF_SECRET_KEY') or 'a string that is hard to velociraptor'
-    SNAPSHOTS_PATH = '~/char-rnn-master/brains'
+    SNAPSHOTS_PATH = '~/char-rnn-master/cv'  # Snapshot directory
     GENERATOR_PATH = '~/char-rnn-master'
     GPU = -1  # Set to 0 if the machine will use the gpu to generate cards.
     LENGTH_LIMIT = 10000  # Limit number of characters generated.

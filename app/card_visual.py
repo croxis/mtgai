@@ -127,12 +127,14 @@ def create_card_img(card):
     mtext = card.text.text
     mtext = transforms.text_unpass_1_choice(mtext, delimit=True)
     mtext = transforms.text_unpass_2_counters(mtext)
-    mtext = transforms.text_unpass_3_unary(mtext)
-    mtext = transforms.text_unpass_4_symbols(mtext, for_forum=False)
+    mtext = transforms.text_unpass_3_uncast(mtext)
+    mtext = transforms.text_unpass_4_unary(mtext)
+    mtext = transforms.text_unpass_5_symbols(mtext, for_forum=False)
     mtext = sentencecase(mtext)
     # We will do step 5 ourselves to keep capitalization
-    mtext = transforms.text_unpass_5_cardname(mtext, card.name.title())
-    mtext = transforms.text_unpass_6_newlines(mtext)
+    mtext = transforms.text_unpass_6_cardname(mtext, card.name.title())
+    mtext = transforms.text_unpass_7_newlines(mtext)
+    mtext = transforms.text_unpass_8_unicode(mtext)
     new_text = Manatext('')
     new_text.text = mtext
     new_text.costs = card.text.costs
@@ -182,7 +184,7 @@ def create_card_img(card):
                                 colorless_mana = img_manager.get_icon_text('colorless')
                                 draw_colorless = ImageDraw.Draw(colorless_mana)
                                 w, h = draw_colorless.textsize(str(subsub_line[1]))
-                                draw_colorless.text(((18-w) // 2, (18-h) // 2 - 3),
+                                draw_colorless.text(((18-w) // 2 - 2, (18-h) // 2 - 1),
                                                     str(subsub_line[1]),
                                                     fill=(0, 0, 0, 255),
                                                     font=font_title)
