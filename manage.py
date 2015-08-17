@@ -17,13 +17,28 @@ manager = Manager(app)
 def make_shell_context():
     return dict(app=app)
 
+
 class Run(Server):
-    def run():
-        print("hoho")
-        socketio.run(app,
-                    host='127.0.0.1',
-                    port=5000,
-                    use_reloader=True)
+    def __call__(self, app, host, port, use_debugger, use_reloader,
+                 threaded, processes, passthrough_errors):
+        # we don't need to run the server in request context
+        # so just run it directly
+
+        if use_debugger is None:
+            use_debugger = app.debug
+            if use_debugger is None:
+                use_debugger = True
+                if sys.stderr.isatty():
+                    print(
+                        "Debugging is on. DANGER: Do not allow random users to connect to this server.",
+                        file=sys.stderr)
+        if use_reloader is None:
+            use_reloader = app.debug
+        socketio.run(host=host,
+                     port=port,
+                     use_reloader=use_reloader,
+                     **self.server_options)
+
 
 manager.add_command("shell", Shell(make_context=make_shell_context))
 manager.add_command("run", Run())
