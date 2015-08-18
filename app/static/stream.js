@@ -22,6 +22,10 @@ $(document).ready(function(){
         }
         console.log('Log (text-card): ' + msg.data);
     });
+    socket.on('image no google card', function(msg) {
+        console.log('Log (img no google): ' + msg.data);
+        $('#image-cards').append('<div class="col-md-4"><img style="padding:3px;" src="card-craft/'+ msg.data +'"></div>');
+    });
     socket.on('ping', function(msg) {
         console.log('Ping: ' + msg.data);
     });

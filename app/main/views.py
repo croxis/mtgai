@@ -133,10 +133,13 @@ def card_generate():
                 line = process.stdout.readline()
                 if line.startswith('|') and line.endswith('|\n'):
                     socketio.emit('raw card', {'data': line})
-                    if session["do_text"] or session["do_images"]:
+                    if session["do_text"]:
                         card = convert_to_card(line)
                         if card:
                             socketio.emit('text card', {'data': card.format().replace('@', card.name.title()).split('\n')})
+                    if session["do_images"] and not session["do_google"]:
+                        socketio.emit('image no google card', {'data': urllib.parse.quote(line, safe='') + session[
+                    "image_extra_params"]})
                     output += line + '\n'  # Recreate the output from the sampler
             line = process.stdout.readline()
             if line.startswith('|') and line.endswith('|\n'):
