@@ -9,21 +9,20 @@ from .image_manager import ImageManager
 
 bootstrap = Bootstrap()
 moment = Moment()
-socketio = None
+socketio = SocketIO()
 img_manager = ImageManager()
 app = None
 
 
 def create_app(config_name):
     global app  # I know I know globals bad.
-    global socketio
     app = Flask(__name__)
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)
 
     bootstrap.init_app(app)
     moment.init_app(app)
-    socketio = SocketIO(app)
+    socketio.init_app(app)
 
     # Attach routes and custom error pages here
     from .main import main as main_blueprint

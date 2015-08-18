@@ -164,6 +164,7 @@ for i=1, opt.length do
 
     if not (string.len(opt.bodytext_append) > 0 and barcount == 10 and ivocab[prev_char[1]] == '|') then 
     	io.write(ivocab[prev_char[1]])
+        io.flush()
     end
 
 

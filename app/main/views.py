@@ -3,7 +3,9 @@ from datetime import datetime
 from io import BytesIO, StringIO
 import json
 import os
+from queue import Queue, Empty
 import subprocess
+from threading import Thread
 import urllib.parse
 import zipfile
 
@@ -18,13 +20,45 @@ from reportlab.lib.utils import ImageReader
 from . import main
 from ..card_visual import create_card_img
 from .. import app, socketio
-from .forms import GenerateCardsForm, MoreOptionsForm, SubmitCardsForm, get_checkpoints_options
+from .forms import GenerateCardsForm, MoreOptionsForm, SubmitCardsForm, \
+    get_checkpoints_options
 
 
-@socketio.on('my event')                          # Decorator to catch an event called "my event":
-def test_message(message):                        # test_message() is the event callback function.
-    emit('my response', {'data': 'got it!'})      # Trigger a new event called "my response"
-                                                  # that can be caught by another callback later in the program.
+class UnexpectedEndOfStream(Exception): pass
+
+
+class NonBlockingStreamReader:
+    def __init__(self, stream):
+        self._stream = stream
+        self._queue = Queue()
+
+        def _populate_queue(stream, queue):
+            while True:
+                line = stream.readline()
+                if line:
+                    queue.put(line)
+                else:
+                    raise UnexpectedEndOfStream
+
+        self._thread = Thread(target=_populate_queue,
+                              args=(self._stream, self._queue))
+        self._thread.daemon = True
+        self._thread.start()
+
+    def readline(self, timeout=None):
+        try:
+            return self._queue.get(block=timeout is not None, timeout=timeout)
+        except Empty:
+            return None
+
+
+@socketio.on('my event')  # Decorator to catch an event called "my event":
+def test_message(message):  # test_message() is the event callback function.
+    emit('my response',
+         {'data': 'got it!'})  # Trigger a new event called "my response"
+    # that can be caught by another callback later in the program.
+
+
 @main.route('/')
 def index():
     return redirect(url_for('.index_mtgai'))
@@ -77,7 +111,7 @@ def card_generate():
     if length > app.config['LENGTH_LIMIT']:
         length = app.config['LENGTH_LIMIT']
     if do_nn:
-        command = ['th', 'sample_hs_v3.lua', checkpoint_path, '-gpuid',
+        command = ['th', 'sample_hs_v3.1.lua', checkpoint_path, '-gpuid',
                    str(app.config['GPU'])]
     else:
         command = ['-gpuid', str(app.config['GPU'])]
@@ -109,12 +143,19 @@ def card_generate():
         command += ['-bodytext_append', request.args.get('bodytext_append')]
     if do_nn:
         session['mode'] = "nn"
-        session['cardtext'] = subprocess.check_output(command,
-                                                      cwd=os.path.expanduser(
-                                                          app.config[
-                                                              'GENERATOR_PATH']),
-                                                      shell=False,
-                                                      stderr=subprocess.STDOUT).decode()
+        output = ''
+        with subprocess.Popen(command,
+                              cwd=os.path.expanduser(
+                                  app.config['GENERATOR_PATH']),
+                              shell=False,
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.STDOUT,
+                              universal_newlines=True) as process:
+            while process.poll() is None:
+                line = process.stdout.readline()
+                if line.startswith('|') and line.endswith('|\n'):
+                    output += line + '\n'  # Recreate the output from the sampler
+        session['cardtext'] = output
         session['cardsep'] = '\n\n'
         session['render_mode'] = request.args.get('render_mode')
     else:
@@ -132,10 +173,15 @@ def card_select():
         use_render_mode(session["render_mode"])
         extra_template_data = {}
         if session["do_images"]:
-            extra_template_data['urls'] = convert_to_urls(session['cardtext'], cardsep=session['cardsep'])
+            extra_template_data['urls'] = convert_to_urls(session['cardtext'],
+                                                          cardsep=session[
+                                                              'cardsep'])
         if session["do_text"]:
-            extra_template_data['text'] = convert_to_text(session['cardtext'], cardsep=session['cardsep'])
-        extra_template_data['form'] = MoreOptionsForm(can_print=session["can_print"], can_mse_set=session["can_mse_set"])
+            extra_template_data['text'] = convert_to_text(session['cardtext'],
+                                                          cardsep=session[
+                                                              'cardsep'])
+        extra_template_data['form'] = MoreOptionsForm(
+            can_print=session["can_print"], can_mse_set=session["can_mse_set"])
         if session["can_print"]:
             if extra_template_data['form'].validate_on_submit():
                 if extra_template_data['form'].print_button.data:
@@ -144,47 +190,51 @@ def card_select():
             if extra_template_data['form'].validate_on_submit():
                 if extra_template_data['form'].mse_set_button.data:
                     return redirect(url_for('.download_mse_set'))
-        return render_template(session["render_template"], **extra_template_data)
+        return render_template(session["render_template"],
+                               **extra_template_data)
 
 
 def use_render_mode(render_mode):
-    session["do_images"]=False
-    session["do_text"]=False
-    session["can_print"]=False
-    session["can_mse_set"]=True
-    if render_mode=="image":
-        session["do_images"]=True
-        session["do_google"]=True
-        session["can_print"]=True
-        session["image_extra_params"]=""
-        session["render_template"]='card_select_image.html'
-    elif render_mode=="image_searchless":
-        session["do_images"]=True
-        session["do_google"]=False
-        session["can_print"]=True
-        session["image_extra_params"]="?no-google=True"
-        session["render_template"]='card_select_image_no_google.html'
-    elif render_mode=="text":
-        session["do_text"]=True
-        session["render_template"]='card_select_text.html'
+    session["do_images"] = False
+    session["do_text"] = False
+    session["can_print"] = False
+    session["can_mse_set"] = True
+    if render_mode == "image":
+        session["do_images"] = True
+        session["do_google"] = True
+        session["can_print"] = True
+        session["image_extra_params"] = ""
+        session["render_template"] = 'card_select_image.html'
+    elif render_mode == "image_searchless":
+        session["do_images"] = True
+        session["do_google"] = False
+        session["can_print"] = True
+        session["image_extra_params"] = "?no-google=True"
+        session["render_template"] = 'card_select_image_no_google.html'
+    elif render_mode == "text":
+        session["do_text"] = True
+        session["render_template"] = 'card_select_text.html'
     else:
         session["render_template"] = 'card_select_raw_only.html'
+
 
 @main.route('/mtgai/download-mse-set', methods=['GET', 'POST'])
 def download_mse_set():
     set_text = b''
     cards = convert_to_cards(session['cardtext'])
     zipped_bytes = BytesIO()
-    set_text+=(utils.mse_prepend.encode())
+    set_text += (utils.mse_prepend.encode())
     for card in cards:
-        set_text+=card.to_mse().encode('utf-8')
-        set_text+=b'\n'
-    set_text+=b'version control:\n\ttype: none\napprentice code: '
-    zipped=zipfile.ZipFile(zipped_bytes, mode='w')
-    zipped.writestr('set',set_text)
+        set_text += card.to_mse().encode('utf-8')
+        set_text += b'\n'
+    set_text += b'version control:\n\ttype: none\napprentice code: '
+    zipped = zipfile.ZipFile(zipped_bytes, mode='w')
+    zipped.writestr('set', set_text)
     zipped.close()
     zipped_bytes.seek(0)
-    return send_file(zipped_bytes, mimetype='application/zip', as_attachment=True, attachment_filename = "nn-set.mse-set")
+    return send_file(zipped_bytes, mimetype='application/zip',
+                     as_attachment=True, attachment_filename="nn-set.mse-set")
+
 
 @main.route('/mtgai/print', methods=['GET', 'POST'])
 def print_cards():
