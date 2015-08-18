@@ -84,7 +84,7 @@ class GenerateCardsForm(Form):
                           description='"Seed" the ai with suggested words')
     length = IntegerField(label="Length",
                           default=2000,
-                          description="How many characters to generate. About 100 per card. Max is " + str(
+                          description="How many characters to generate. About 100 per card. The neural network may not finish a card so the output is usually slightly less. Max is " + str(
                               app.config['LENGTH_LIMIT']),
                           validators=[NumberRange(min=0, max=app.config[
                               'LENGTH_LIMIT']),

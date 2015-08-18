@@ -1,18 +1,33 @@
+
 $(document).ready(function(){
     var socket = io.connect('http://' + document.domain + ':' + location.port);
-    socket.on('connect', function() {
-        socket.emit('my event', {data: 'I\'m connected!'});
+    var current_char = 0;
+    var max_char = 0;
+    socket.emit('generate');
+    socket.on('set max char', function(msg) {
+        max_char = msg.data;
     });
+    socket.on('raw card', function(msg) {
+        $('#raw-cards').append('<p>' + msg.data + '</p>');
+        current_char += msg.data.length;
+        console.log('Log (' + current_char + '/' + max_char +'): ' + msg.data);
+    });
+    socket.on('ping', function(msg) {
+        console.log('Ping: ' + msg.data);
+    });
+    //socket.on('connect', function() {
+    //    socket.emit('my event', {data: 'I\'m connected!'});
+    //});
     // start up the SocketIO connection to the server - the namespace 'test' is also included here if necessary
     //var socket = io.connect('http://' + document.domain + ':' + location.port + '/test');
     // this is a callback that triggers when the "my response" event is emitted by the server.
-    socket.on('my response', function(msg) {
-        $('#log').append('<p>Received: ' + msg.data + '</p>');
-        console.log('Log: ' + msg.data);
-    });
+    //socket.on('my response', function(msg) {
+    //    $('#log').append('<p>Received: ' + msg.data + '</p>');
+    //    console.log('Log: ' + msg.data);
+    //});
     //example of triggering an event on click of a form submit button
-    $('form#emit').submit(function(event) {
-        socket.emit('my event', {data: $('#emit_data').val()});
-        return false;
-    });
+    //$('form#emit').submit(function(event) {
+    //    socket.emit('my event', {data: $('#emit_data').val()});
+    //    return false;
+    //});
 });

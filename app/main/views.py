@@ -23,34 +23,6 @@ from .forms import GenerateCardsForm, MoreOptionsForm, SubmitCardsForm, \
     get_checkpoints_options
 
 
-class UnexpectedEndOfStream(Exception): pass
-
-
-class NonBlockingStreamReader:
-    def __init__(self, stream):
-        self._stream = stream
-        self._queue = Queue()
-
-        def _populate_queue(stream, queue):
-            while True:
-                line = stream.readline()
-                if line:
-                    queue.put(line)
-                else:
-                    raise UnexpectedEndOfStream
-
-        self._thread = Thread(target=_populate_queue,
-                              args=(self._stream, self._queue))
-        self._thread.daemon = True
-        self._thread.start()
-
-    def readline(self, timeout=None):
-        try:
-            return self._queue.get(block=timeout is not None, timeout=timeout)
-        except Empty:
-            return None
-
-
 @socketio.on('my event')  # Decorator to catch an event called "my event":
 def test_message(message):  # test_message() is the event callback function.
     print("I got a message:", message)
@@ -70,11 +42,15 @@ def index_mtgai():
     random_form.checkpoint.choices = get_checkpoints_options()
     form = SubmitCardsForm()
     if random_form.validate_on_submit():
-        return redirect(url_for('.card_generate',
-                                checkpoint_path=random_form.checkpoint.data,
-                                seed=random_form.seed.data,
+        session['render_mode'] = random_form.render_mode.data
+        session['checkpoint_path'] = random_form.checkpoint.data
+        session['seed'] = random_form.seed.data
+
+        session['length'] = random_form.length.data
+        return redirect(url_for('.card_select'))
+        '''return redirect(url_for('.card_generate',
                                 primetext=random_form.primetext.data,
-                                length=random_form.length.data,
+                                //length=random_form.length.data,
                                 temperature=random_form.temperature.data,
                                 name=random_form.name.data,
                                 supertypes=random_form.supertypes.data,
@@ -83,8 +59,7 @@ def index_mtgai():
                                 rarity=random_form.rarity.data,
                                 bodytext_prepend=random_form.bodytext_prepend.data,
                                 bodytext_append=random_form.bodytext_append.data,
-                                render_mode=random_form.render_mode.data,
-                                ))
+                                ))'''
     if form.validate_on_submit():
         session['cardtext'] = form.body.data
         session['cardsep'] = '\r\n\r\n'
@@ -99,29 +74,31 @@ def index_mtgai():
                            title='MTG Automatic Inventor (MTGAI)')
 
 
-@main.route('/mtgai/card-generate/')
+@socketio.on('generate')
 def card_generate():
-    checkpoint_option = request.args.get('checkpoint_path')
+    checkpoint_option = session['checkpoint_path']
     do_nn = checkpoint_option != "None"
     if do_nn:
         checkpoint_path = os.path.join(
             os.path.expanduser(app.config['SNAPSHOTS_PATH']),
             checkpoint_option)
-    length = int(request.args.get('length'))
+    length = int(session['length'])
     if length > app.config['LENGTH_LIMIT']:
         length = app.config['LENGTH_LIMIT']
+    socketio.emit('set max char', {'data': length})
+    length += 150  # Small fudge factor to be a little more accurate with
+                   # the amount of text actually generated
     if do_nn:
         command = ['th', 'sample_hs_v3.1.lua', checkpoint_path, '-gpuid',
                    str(app.config['GPU'])]
     else:
         command = ['-gpuid', str(app.config['GPU'])]
-    if request.args.get('seed'):
-        command.append('-seed')
-        command.append(request.args.get('seed'))
+    if session['seed']:
+        command += ['-seed', str(session['seed'])]
     if request.args.get('primetext'):
         command.append('-primetext')
         command.append(request.args.get('primetext'))
-    if request.args.get('length'):
+    if session['length']:
         command.append('-length')
         command.append(str(length))
     if request.args.get('temperature'):
@@ -154,15 +131,18 @@ def card_generate():
             while process.poll() is None:
                 line = process.stdout.readline()
                 if line.startswith('|') and line.endswith('|\n'):
-                    socketio.emit('my response', {'data': line})
+                    socketio.emit('raw card', {'data': line})
                     output += line + '\n'  # Recreate the output from the sampler
+                line = process.stdout.readline()
+                if line.startswith('|') and line.endswith('|\n'):
+                    socketio.emit('raw card', {'data': line})
+                    output += line + '\n'
         session['cardtext'] = output
         session['cardsep'] = '\n\n'
         session['render_mode'] = request.args.get('render_mode')
     else:
         session['mode'] = "dummy"
         session['command'] = " ".join(command)
-    return redirect(url_for('.card_select'))
 
 
 @main.route('/mtgai/card-select', methods=['GET', 'POST'])
