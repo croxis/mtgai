@@ -64,9 +64,10 @@ def get_render_modes():
              ("image_searchless", "Card Image-No Search"),
              ("text", "Pretty Text"),
              ("", "Raw")]
-    if app.config['MSE_PATH']:
-        modes.insert(0, ('image_mse_searchless', 'Improved Card Images-No Search'))
-        modes.insert(0, ('image_mse', 'Improved Card Images'))
+    # TODO: Implement MSE
+    #if app.config['MSE_PATH']:
+    #    modes.insert(0, ('image_mse_searchless', 'Improved Card Images-No Search'))
+    #    modes.insert(0, ('image_mse', 'Improved Card Images'))
     return modes
 
 

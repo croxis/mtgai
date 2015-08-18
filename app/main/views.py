@@ -88,6 +88,7 @@ def card_generate():
     socketio.emit('set max char', {'data': length})
     length += 140  # Small fudge factor to be a little more accurate with
                    # the amount of text actually generated
+    use_render_mode(session["render_mode"])
     if do_nn:
         command = ['th', 'sample_hs_v3.1.lua', checkpoint_path, '-gpuid',
                    str(app.config['GPU'])]
@@ -132,11 +133,16 @@ def card_generate():
                 line = process.stdout.readline()
                 if line.startswith('|') and line.endswith('|\n'):
                     socketio.emit('raw card', {'data': line})
+                    if session["do_text"] or session["do_images"]:
+                        card = convert_to_card(line)
+                        if card:
+                            socketio.emit('text card', {'data': card.format().replace('@', card.name.title()).split('\n')})
                     output += line + '\n'  # Recreate the output from the sampler
-                line = process.stdout.readline()
-                if line.startswith('|') and line.endswith('|\n'):
-                    socketio.emit('raw card', {'data': line})
-                    output += line + '\n'
+            line = process.stdout.readline()
+            if line.startswith('|') and line.endswith('|\n'):
+                print("Fineal output runsadf")
+                socketio.emit('raw card', {'data': line})
+                output += line + '\n'
         session['cardtext'] = output
         session['cardsep'] = '\n\n'
     else:
@@ -266,15 +272,21 @@ def convert_to_urls(card_text, cardsep='\r\n\r\n'):
     return urls
 
 
+def convert_to_card(card_src):
+    """Convert a single line of text to a Card. Returns none if invalid."""
+    card = cardlib.Card(card_src)
+    if card.valid:
+        return card
+
+
 def convert_to_cards(text, cardsep='\r\n\r\n'):
     """Card separation is \r\n\r\n when submitted by form and \n\n by text
     file."""
     cards = []
     for card_src in text.split(cardsep):
-        if card_src:
-            card = cardlib.Card(card_src)
-            if card.valid:
-                cards.append(card)
+        card = convert_to_card(card_src)
+        if card:
+            cards.append(card)
     return cards
 
 

@@ -3,6 +3,7 @@ $(document).ready(function(){
     var socket = io.connect('http://' + document.domain + ':' + location.port);
     var current_char = 0;
     var max_char = 0;
+    var percent = 0;
     socket.emit('generate');
     socket.on('set max char', function(msg) {
         max_char = msg.data;
@@ -11,14 +12,23 @@ $(document).ready(function(){
         $('#raw-cards').append('<p>' + msg.data + '</p>');
         current_char += msg.data.length;
         console.log('Log (' + current_char + '/' + max_char +'): ' + msg.data);
-        $('#raw-progress').css('width', current_char/max_char*100 + '%').attr('aria-valuenow', current_char).html(current_char/max_char*100 + '%');
+        percent = current_char/max_char*100
+        $('#raw-progress').css('width', percent + '%').attr('aria-valuenow', current_char).html(+percent.toFixed(2) + '%');
+    });
+    socket.on('text card', function(msg) {
+        var arrayLength = msg.data.length;
+        for (var i = 0; i< arrayLength; i++){
+            $('#text-cards').append('<div>' + msg.data[i] + '</div>');
+        }
+        console.log('Log (text-card): ' + msg.data);
     });
     socket.on('ping', function(msg) {
         console.log('Ping: ' + msg.data);
     });
     socket.on('finished generation', function(msg) {
         console.log('Finished card generation');
-        $('#raw-progress').css('width', '100%').attr('aria-valuenow', current_char).html('100%').removeClass('active');
+        $('#raw-progress').css('width', '100%').attr('aria-valuenow', current_char).html('100%');
+        $('#raw-progress').removeClass('active');
     });
     //socket.on('connect', function() {
     //    socket.emit('my event', {data: 'I\'m connected!'});
