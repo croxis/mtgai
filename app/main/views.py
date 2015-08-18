@@ -47,14 +47,14 @@ def index_mtgai():
         session['seed'] = random_form.seed.data
         session['primetext'] = random_form.primetext.data
         session['length'] = random_form.length.data
-        session['temperature'] = random_form.temperature.data
+        session['temperature'] = float(random_form.temperature.data)
         session['name'] = random_form.name.data
         session['supertypes'] = random_form.supertypes.data
         session['types'] = random_form.types.data
         session['subtypes'] = random_form.subtypes.data
         session['rarity'] = random_form.rarity.data
         session['bodytext_prepend'] = random_form.bodytext_prepend.data
-        session['bodytext_appand'] = random_form.bodytext_append.data
+        session['bodytext_append'] = random_form.bodytext_append.data
         return redirect(url_for('.card_select'))
     if form.validate_on_submit():
         session['cardtext'] = form.body.data
@@ -97,7 +97,7 @@ def card_generate():
     if session['length']:
         command += ['-length', str(length)]
     if session['temperature']:
-        command += ['-temperature', session['temperature']]
+        command += ['-temperature', str(session['temperature'])]
     if session['name']:
         command += ['-name', session['name']]
     if session['types']:
