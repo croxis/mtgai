@@ -134,11 +134,6 @@ def card_generate():
                         socketio.emit('image card', {'data': urllib.parse.quote(line, safe='') + session[
                     "image_extra_params"]})
                     output += line + '\n'  # Recreate the output from the sampler
-            line = process.stdout.readline()
-            if line.startswith('|') and line.endswith('|\n'):
-                print("Fineal output runsadf")
-                socketio.emit('raw card', {'data': line})
-                output += line + '\n'
         session['cardtext'] = output
         session['cardsep'] = '\n\n'
     else:
@@ -149,6 +144,13 @@ def card_generate():
 
 @main.route('/mtgai/card-select', methods=['GET', 'POST'])
 def card_select():
+    checkpoint_option = session['checkpoint_path']
+    do_nn = checkpoint_option != "None"
+    if do_nn:
+        session['mode'] = "nn"
+    else:
+        session['mode'] = "dummy"
+        session['command'] = "This needs some fixing and reorganization"
     if session['mode'] == "dummy":
         return render_template('nn_dummy.html', command=session['command'])
     else:
