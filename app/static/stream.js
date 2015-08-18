@@ -1,6 +1,6 @@
 
 $(document).ready(function(){
-    var socket = io.connect('http://' + document.domain + ':' + location.port);
+    var socket = io.connect(window.location.protocol + '//' + document.domain + ':' + location.port);
     var current_char = 0;
     var max_char = 0;
     var percent = 0;
