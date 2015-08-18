@@ -45,21 +45,17 @@ def index_mtgai():
         session['render_mode'] = random_form.render_mode.data
         session['checkpoint_path'] = random_form.checkpoint.data
         session['seed'] = random_form.seed.data
-
+        session['primetext'] = random_form.primetext.data
         session['length'] = random_form.length.data
+        session['temperature'] = random_form.temperature.data
+        session['name'] = random_form.name.data
+        session['supertypes'] = random_form.supertypes.data
+        session['types'] = random_form.types.data
+        session['subtypes'] = random_form.subtypes.data
+        session['rarity'] = random_form.rarity.data
+        session['bodytext_prepend'] = random_form.bodytext_prepend.data
+        session['bodytext_appand'] = random_form.bodytext_append.data
         return redirect(url_for('.card_select'))
-        '''return redirect(url_for('.card_generate',
-                                primetext=random_form.primetext.data,
-                                //length=random_form.length.data,
-                                temperature=random_form.temperature.data,
-                                name=random_form.name.data,
-                                supertypes=random_form.supertypes.data,
-                                types=random_form.types.data,
-                                subtypes=random_form.subtypes.data,
-                                rarity=random_form.rarity.data,
-                                bodytext_prepend=random_form.bodytext_prepend.data,
-                                bodytext_append=random_form.bodytext_append.data,
-                                ))'''
     if form.validate_on_submit():
         session['cardtext'] = form.body.data
         session['cardsep'] = '\r\n\r\n'
@@ -96,29 +92,26 @@ def card_generate():
         command = ['-gpuid', str(app.config['GPU'])]
     if session['seed']:
         command += ['-seed', str(session['seed'])]
-    if request.args.get('primetext'):
-        command.append('-primetext')
-        command.append(request.args.get('primetext'))
+    if session['primetext']:
+        command += ['-primetext', session['primetext']]
     if session['length']:
-        command.append('-length')
-        command.append(str(length))
-    if request.args.get('temperature'):
-        command.append('-temperature')
-        command.append(str(request.args.get('temperature')))
-    if request.args.get('name'):
-        command += ['-name', request.args.get('name')]
-    if request.args.get('types'):
-        command += ['-types', request.args.get('types')]
-    if request.args.get('supertypes'):
-        command += ['-supertypes', request.args.get('supertypes')]
-    if request.args.get('subtypes'):
-        command += ['-subtypes', request.args.get('subtypes')]
-    if request.args.get('rarity'):
-        command += ['-rarity', request.args.get('rarity')]
-    if request.args.get('bodytext_prepend'):
-        command += ['-bodytext_prepend', request.args.get('bodytext_prepend')]
-    if request.args.get('bodytext_append'):
-        command += ['-bodytext_append', request.args.get('bodytext_append')]
+        command += ['-length', str(length)]
+    if session['temperature']:
+        command += ['-temperature', session['temperature']]
+    if session['name']:
+        command += ['-name', session['name']]
+    if session['types']:
+        command += ['-types', session['types']]
+    if session['supertypes']:
+        command += ['-supertypes', session['supertypes']]
+    if session['subtypes']:
+        command += ['-subtypes', session['subtypes']]
+    if session['rarity']:
+        command += ['-rarity', session['rarity']]
+    if session['bodytext_prepend']:
+        command += ['-bodytext_prepend', session['bodytext_prepend']]
+    if session['bodytext_append']:
+        command += ['-bodytext_append', session['bodytext_append']]
     if do_nn:
         session['mode'] = "nn"
         output = ''
