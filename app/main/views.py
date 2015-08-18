@@ -86,7 +86,7 @@ def card_generate():
     if length > app.config['LENGTH_LIMIT']:
         length = app.config['LENGTH_LIMIT']
     socketio.emit('set max char', {'data': length})
-    length += 150  # Small fudge factor to be a little more accurate with
+    length += 140  # Small fudge factor to be a little more accurate with
                    # the amount of text actually generated
     if do_nn:
         command = ['th', 'sample_hs_v3.1.lua', checkpoint_path, '-gpuid',
@@ -139,10 +139,10 @@ def card_generate():
                     output += line + '\n'
         session['cardtext'] = output
         session['cardsep'] = '\n\n'
-        session['render_mode'] = request.args.get('render_mode')
     else:
         session['mode'] = "dummy"
         session['command'] = " ".join(command)
+    socketio.emit('finished generation', {'data': ''})
 
 
 @main.route('/mtgai/card-select', methods=['GET', 'POST'])

@@ -11,9 +11,14 @@ $(document).ready(function(){
         $('#raw-cards').append('<p>' + msg.data + '</p>');
         current_char += msg.data.length;
         console.log('Log (' + current_char + '/' + max_char +'): ' + msg.data);
+        $('#raw-progress').css('width', current_char/max_char*100 + '%').attr('aria-valuenow', current_char).html(current_char/max_char*100 + '%');
     });
     socket.on('ping', function(msg) {
         console.log('Ping: ' + msg.data);
+    });
+    socket.on('finished generation', function(msg) {
+        console.log('Finished card generation');
+        $('#raw-progress').css('width', '100%').attr('aria-valuenow', current_char).html('100%').removeClass('active');
     });
     //socket.on('connect', function() {
     //    socket.emit('my event', {data: 'I\'m connected!'});
