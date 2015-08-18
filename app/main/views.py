@@ -123,7 +123,9 @@ def card_generate():
                               stderr=subprocess.STDOUT,
                               universal_newlines=True) as process:
             while process.poll() is None:
+                print("Debug timing statement to investigate server stall 1")
                 line = process.stdout.readline()
+                print("Debug timing statement to investigate server stall 2")
                 if line.startswith('|') and line.endswith('|\n'):
                     socketio.emit('raw card', {'data': line})
                     if session["do_text"]:
@@ -134,6 +136,7 @@ def card_generate():
                         socketio.emit('image card', {'data': urllib.parse.quote(line, safe='') + session[
                     "image_extra_params"]})
                     output += line + '\n'  # Recreate the output from the sampler
+                print("Debug timing statement to investigate server stall 3")
         session['cardtext'] = output
         session['cardsep'] = '\n\n'
     else:
@@ -156,14 +159,6 @@ def card_select():
     else:
         use_render_mode(session["render_mode"])
         extra_template_data = {}
-        if session["do_images"]:
-            extra_template_data['urls'] = convert_to_urls(session['cardtext'],
-                                                          cardsep=session[
-                                                              'cardsep'])
-        if session["do_text"]:
-            extra_template_data['text'] = convert_to_text(session['cardtext'],
-                                                          cardsep=session[
-                                                              'cardsep'])
         extra_template_data['form'] = MoreOptionsForm(
             can_print=session["can_print"], can_mse_set=session["can_mse_set"])
         if session["can_print"]:
