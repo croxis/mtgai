@@ -16,3 +16,8 @@ Card backgrounds used on this site are used with credit to <a href="http://magic
     TODO: Make cards less ugly.
 </div>
 {% endblock %}
+
+{% block scripts %}
+{{super()}}
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
+{% endblock %}

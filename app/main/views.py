@@ -11,7 +11,6 @@ import zipfile
 
 from flask import redirect, render_template, request, send_file, session, \
     url_for
-from flask.ext.socketio import emit
 import lib.cardlib as cardlib
 import lib.utils as utils
 from reportlab.lib.pagesizes import landscape, letter
@@ -54,7 +53,8 @@ class NonBlockingStreamReader:
 
 @socketio.on('my event')  # Decorator to catch an event called "my event":
 def test_message(message):  # test_message() is the event callback function.
-    emit('my response',
+    print("I got a message:", message)
+    socketio.emit('my response',
          {'data': 'got it!'})  # Trigger a new event called "my response"
     # that can be caught by another callback later in the program.
 
@@ -154,6 +154,7 @@ def card_generate():
             while process.poll() is None:
                 line = process.stdout.readline()
                 if line.startswith('|') and line.endswith('|\n'):
+                    socketio.emit('my response', {'data': line})
                     output += line + '\n'  # Recreate the output from the sampler
         session['cardtext'] = output
         session['cardsep'] = '\n\n'
@@ -167,7 +168,6 @@ def card_generate():
 @main.route('/mtgai/card-select', methods=['GET', 'POST'])
 def card_select():
     if session['mode'] == "dummy":
-        print(session['command'])
         return render_template('nn_dummy.html', command=session['command'])
     else:
         use_render_mode(session["render_mode"])

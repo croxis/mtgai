@@ -1,6 +1,6 @@
 __author__ = 'croxis'
 from flask import Flask
-from flask.ext.bootstrap import Bootstrap
+from flask.ext.bootstrap import Bootstrap, WebCDN
 from flask.ext.moment import Moment
 from flask.ext.socketio import SocketIO
 from config import config
@@ -23,6 +23,10 @@ def create_app(config_name):
     bootstrap.init_app(app)
     moment.init_app(app)
     socketio.init_app(app)
+
+    app.extensions['bootstrap']['cdns']['jquery'] = WebCDN(
+    '//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/')
+
 
     # Attach routes and custom error pages here
     from .main import main as main_blueprint
