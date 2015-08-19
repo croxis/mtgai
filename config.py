@@ -16,9 +16,13 @@ class Config:
     LENGTH_LIMIT = 10000  # Limit number of characters generated.
     # Store images for an hour
     PERMANENT_SESSION_LIFETIME = datetime.timedelta(seconds=3600)
+    CACHE_PATH = '/tmp/mtgai'  # Storage directory for images. /tmp usually
+                               # a ramdisk. Adjust session_lifetime as needed.
+                               # Directory is created by app if needed.
     # If set the Magic Set Editor is an option for card rendering
     # Set to '' or None to disable.
     MSE_PATH = '~/.wine/drive_c/Program Files (x86)/Magic Set Editor 2/'
+
 
     @staticmethod
     def init_app(app):

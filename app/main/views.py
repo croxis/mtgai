@@ -114,7 +114,7 @@ def card_generate():
         command += ['-bodytext_append', session['bodytext_append']]
     if do_nn:
         session['mode'] = "nn"
-        output = ''
+        session['cardtext'] = ''
         with subprocess.Popen(command,
                               cwd=os.path.expanduser(
                                   app.config['GENERATOR_PATH']),
@@ -123,9 +123,7 @@ def card_generate():
                               stderr=subprocess.STDOUT,
                               universal_newlines=True) as process:
             while process.poll() is None:
-                print("Debug timing statement to investigate server stall 1")
                 line = process.stdout.readline()
-                print("Debug timing statement to investigate server stall 2")
                 if line.startswith('|') and line.endswith('|\n'):
                     socketio.emit('raw card', {'data': line})
                     if session["do_text"]:
@@ -135,10 +133,9 @@ def card_generate():
                     if session["do_images"]:
                         socketio.emit('image card', {'data': urllib.parse.quote(line, safe='') + session[
                     "image_extra_params"]})
-                    output += line + '\n'  # Recreate the output from the sampler
-                print("Debug timing statement to investigate server stall 3")
-        session['cardtext'] = output
+                    session['cardtext'] += line + '\n'  # Recreate the output from the sampler
         session['cardsep'] = '\n\n'
+        app.logger.debug("Card generation complete.")
     else:
         session['mode'] = "dummy"
         session['command'] = " ".join(command)
