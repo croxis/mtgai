@@ -1,7 +1,6 @@
 __author__ = 'croxis'
 from datetime import datetime
-from io import BytesIO, StringIO
-import json
+from io import BytesIO
 import os
 from queue import Queue, Empty
 import subprocess
@@ -10,7 +9,7 @@ import time
 import urllib.parse
 import zipfile
 
-from flask import redirect, render_template, request, send_file, session, \
+from flask import make_response, redirect, render_template, send_file, session, \
     url_for
 import lib.cardlib as cardlib
 import lib.utils as utils
@@ -19,7 +18,7 @@ from reportlab.lib.utils import ImageReader
 
 from . import main
 from ..card_visual import create_card_img
-from .. import app, socketio
+from .. import app, session_manager, socketio
 from .forms import GenerateCardsForm, MoreOptionsForm, SubmitCardsForm, \
     get_checkpoints_options
 
@@ -56,6 +55,7 @@ def index():
 
 @main.route('/mtgai', methods=['GET', 'POST'])
 def index_mtgai():
+    print("Session Main:", session)
     random_form = GenerateCardsForm()
     random_form.checkpoint.choices = get_checkpoints_options()
     form = SubmitCardsForm()
@@ -90,6 +90,8 @@ def index_mtgai():
 
 @socketio.on('generate')
 def card_generate():
+    # Filebased systems need the session cleaned up manually
+    session_manager.cleanup_sessions()
     checkpoint_option = session['checkpoint_path']
     do_nn = checkpoint_option != "None"
     if do_nn:
@@ -180,6 +182,8 @@ def card_generate():
     else:
         session['mode'] = "dummy"
         session['command'] = " ".join(command)
+    session.modified = True
+    app.save_session(session, make_response('dummy'))
     socketio.emit('finished generation', {'data': ''})
 
 

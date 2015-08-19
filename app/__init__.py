@@ -17,6 +17,7 @@ bootstrap = Bootstrap()
 moment = Moment()
 socketio = SocketIO()
 img_manager = ImageManager()
+session_manager = KVSessionExtension()
 store = None
 app = None
 
@@ -36,7 +37,7 @@ def create_app(config_name):
     bootstrap.init_app(app)
     moment.init_app(app)
     socketio.init_app(app)
-    KVSessionExtension(store, app)
+    session_manager.init_app(app, store)
 
 
     app.extensions['bootstrap']['cdns']['jquery'] = WebCDN(
