@@ -55,7 +55,6 @@ def index():
 
 @main.route('/mtgai', methods=['GET', 'POST'])
 def index_mtgai():
-    print("Session Main:", session)
     random_form = GenerateCardsForm()
     random_form.checkpoint.choices = get_checkpoints_options()
     form = SubmitCardsForm()
@@ -241,6 +240,7 @@ def use_render_mode(render_mode):
 
 @main.route('/mtgai/download-mse-set', methods=['GET', 'POST'])
 def download_mse_set():
+    app.logger.debug("Set Session: " + str(session))
     set_text = b''
     cards = convert_to_cards(session['cardtext'])
     zipped_bytes = BytesIO()
@@ -314,19 +314,19 @@ def convert_to_card(card_src):
         return card
 
 
-def convert_to_cards(text, cardsep='\r\n\r\n'):
+def convert_to_cards(text):
     """Card separation is \r\n\r\n when submitted by form and \n\n by text
     file."""
     cards = []
-    for card_src in text.split(cardsep):
+    for card_src in text.split(session['cardsep']):
         card = convert_to_card(card_src)
         if card:
             cards.append(card)
     return cards
 
 
-def convert_to_text(text, cardsep='\r\n\r\n'):
-    cards = convert_to_cards(text, cardsep)
+def convert_to_text(text):
+    cards = convert_to_cards(text, session['cardsep'])
     text = []
     for card in cards:
         text.extend(card.format().replace('@', card.name.title()).split('\n'))

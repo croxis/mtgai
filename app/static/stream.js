@@ -13,6 +13,9 @@ $(document).ready(function(){
         current_char += msg.data.length;
         console.log('Log (' + current_char + '/' + max_char +'): ' + msg.data);
         percent = current_char/max_char*100
+        if (percent>100) {
+            percent = 100;
+        }
         $('#raw-progress').css('width', percent + '%').attr('aria-valuenow', current_char).html(+percent.toFixed(2) + '%');
     });
     socket.on('text card', function(msg) {
