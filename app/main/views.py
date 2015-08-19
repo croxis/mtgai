@@ -6,6 +6,7 @@ import os
 from queue import Queue, Empty
 import subprocess
 from threading import Thread
+import time
 import urllib.parse
 import zipfile
 
@@ -21,6 +22,23 @@ from ..card_visual import create_card_img
 from .. import app, socketio
 from .forms import GenerateCardsForm, MoreOptionsForm, SubmitCardsForm, \
     get_checkpoints_options
+
+
+def enqueue_output(process, queue):
+    while process.poll() is None:
+        try:
+            line = process.stdout.readline()
+            if line.startswith('|') and line.endswith('|\n'):
+                queue.put(line)
+            time.sleep(0.1)
+        except ValueError:
+            time.sleep(0.1)
+            #print("Empty result, lets see what happens.")
+    '''for line in iter(out.readline, b''):
+        print("Que line:", line)
+        queue.put(line)
+        print("End oput")
+    #out.close()'''
 
 
 @socketio.on('my event')  # Decorator to catch an event called "my event":
@@ -115,6 +133,7 @@ def card_generate():
     if do_nn:
         session['mode'] = "nn"
         session['cardtext'] = ''
+        app.logger.debug("Card generation initiated.")
         with subprocess.Popen(command,
                               cwd=os.path.expanduser(
                                   app.config['GENERATOR_PATH']),
@@ -122,7 +141,28 @@ def card_generate():
                               stdout=subprocess.PIPE,
                               stderr=subprocess.STDOUT,
                               universal_newlines=True) as process:
+            queue = Queue()
+            thread = Thread(target=enqueue_output, args=(process, queue))
+            thread.daemon = True
+            thread.start()
             while process.poll() is None:
+                try:
+                    time.sleep(0.01)
+                    line = queue.get_nowait()
+                except Empty:
+                    pass
+                else:
+                    socketio.emit('raw card', {'data': line})
+                    if session["do_text"]:
+                        card = convert_to_card(line)
+                        if card:
+                            socketio.emit('text card', {'data': card.format().replace('@', card.name.title()).split('\n')})
+                    if session["do_images"]:
+                        socketio.emit('image card', {'data': urllib.parse.quote(line, safe='') + session[
+                    "image_extra_params"]})
+                    session['cardtext'] += line + '\n'  # Recreate the output from the sampler
+                    app.logger.debug("Card generated: " + line.rstrip('\n\n'))
+            '''while process.poll() is None:
                 line = process.stdout.readline()
                 if line.startswith('|') and line.endswith('|\n'):
                     socketio.emit('raw card', {'data': line})
@@ -134,6 +174,7 @@ def card_generate():
                         socketio.emit('image card', {'data': urllib.parse.quote(line, safe='') + session[
                     "image_extra_params"]})
                     session['cardtext'] += line + '\n'  # Recreate the output from the sampler
+                    app.logger.debug("Card generated: " + line.rstrip('\n\n'))'''
         session['cardsep'] = '\n\n'
         app.logger.debug("Card generation complete.")
     else:
