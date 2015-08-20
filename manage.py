@@ -4,6 +4,8 @@ import os
 import sys
 from app import create_app, get_scocket
 from flask.ext.script import Server, Manager, Shell
+import eventlet
+eventlet.monkey_patch()
 # Manually adding mtgencode to path because hardcast sixdrop is a jerk for not
 # adding __init__.py!
 sys.path.append('./mtgencode/lib')

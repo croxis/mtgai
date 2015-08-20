@@ -2,12 +2,14 @@ __author__ = 'croxis'
 from datetime import datetime
 from io import BytesIO
 import os
-from queue import Queue, Empty
+from queue import Empty
 import subprocess
 from threading import Thread
 import time
 import urllib.parse
 import zipfile
+
+from eventlet import Queue
 
 from flask import make_response, redirect, render_template, send_file, session, \
     url_for
@@ -21,6 +23,9 @@ from ..card_visual import create_card_img
 from .. import app, session_manager, socketio
 from .forms import GenerateCardsForm, MoreOptionsForm, SubmitCardsForm, \
     get_checkpoints_options
+
+
+thread_pool = {}  # CERF token: thread
 
 
 def enqueue_output(process, queue):
@@ -90,6 +95,7 @@ def index_mtgai():
 @socketio.on('generate')
 def card_generate():
     # Filebased systems need the session cleaned up manually
+    print("Generate")
     session_manager.cleanup_sessions()
     checkpoint_option = session['checkpoint_path']
     do_nn = checkpoint_option != "None"
@@ -134,7 +140,7 @@ def card_generate():
     if do_nn:
         session['mode'] = "nn"
         session['cardtext'] = ''
-        app.logger.debug("Card generation initiated.")
+        app.logger.debug("Card generation initiated: " + ' '.join(command))
         with subprocess.Popen(command,
                               cwd=os.path.expanduser(
                                   app.config['GENERATOR_PATH']),
