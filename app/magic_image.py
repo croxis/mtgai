@@ -10,12 +10,12 @@ import os
 import time
 import random
 import math
-import urllib.parse
 
 import requests
-from requests.exceptions import ConnectionError
 
 from flask import request
+
+from . import app
 
 TMP_FILE = CACHE_DIR + "/tmp.jpg"
 STORE_DIR = CACHE_DIR + "/store"
@@ -50,7 +50,12 @@ def fetch(query, color):
     start = 0  # Google's start query string parameter for pagination.
     #while start < 60:  # Google will only return a max of 56 results.
     if True:
-        r = requests.get(base_url % start)
+        try:
+            r = requests.get(base_url % start)
+        except TypeError:
+            app.logger.error("Unable to get url: " + base_url + ' | ' + str(start))
+            return
+        # Be nice to Google and they'll be nice back :)
         time.sleep(1.5)
         '''r = None
         for i in range(5):
@@ -75,10 +80,6 @@ def fetch(query, color):
         for image_info in loads:
             url = image_info['unescapedUrl']
             return url
-
-    # Be nice to Google and they'll be nice back :)
-
-
     # No images found.
     return None
 
