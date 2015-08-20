@@ -16,7 +16,10 @@ from . import img_manager
 try:
     import textwrap
     import nltk.data
+
     sent_tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
+
+
     # This crazy thing is actually invoked as an unpass, so newlines are still
     # encoded.
     def sentencecase(s):
@@ -27,7 +30,8 @@ try:
             if line:
                 sentences = sent_tokenizer.tokenize(line)
                 clines += [' '.join([sent.capitalize() for sent in sentences])]
-        return utils.newline.join(clines).replace(utils.reserved_marker, utils.x_marker)
+        return utils.newline.join(clines).replace(utils.reserved_marker,
+                                                  utils.x_marker)
 except ImportError:
     def sentencecase(s):
         return s.capitalize()
@@ -57,11 +61,13 @@ def draw_costs(image, draw, fonts, card):
                     img_manager.get_icon('blue'))
         x_offset += 23
     for x in range(0, cost['black']):
-        image.paste(img_manager.get_icon('black'), (321 - x_offset, 42 - h // 2),
+        image.paste(img_manager.get_icon('black'),
+                    (321 - x_offset, 42 - h // 2),
                     img_manager.get_icon('blue'))
         x_offset += 23
     for x in range(0, cost['green']):
-        image.paste(img_manager.get_icon('green'), (321 - x_offset, 42 - h // 2),
+        image.paste(img_manager.get_icon('green'),
+                    (321 - x_offset, 42 - h // 2),
                     img_manager.get_icon('blue'))
         x_offset += 23
     for x in range(0, cost['red']):
@@ -73,7 +79,7 @@ def draw_costs(image, draw, fonts, card):
         draw_colorless = ImageDraw.Draw(colorless_mana)
         w, h = draw_colorless.textsize(str(cost['colorless']))
         W, H = colorless_mana.size
-        draw_colorless.text(((W-w) // 2 - 2, (H-h) // 2 - 5),
+        draw_colorless.text(((W - w) // 2 - 2, (H - h) // 2 - 5),
                             str(cost['colorless']),
                             fill=(0, 0, 0, 255),
                             font=fonts['font_title'])
@@ -95,12 +101,12 @@ def draw_title(image, draw, fonts, card):
 def draw_types(image, draw, fonts, card):
     typeline = ""
     if card.supertypes:
-        typeline+=' '.join(card.supertypes).title()+' '
-    typeline+=' '.join(card.types).title()
+        typeline += ' '.join(card.supertypes).title() + ' '
+    typeline += ' '.join(card.types).title()
     if card.subtypes:
-        typeline+=' - ' + ' '.join(card.subtypes).title()
+        typeline += ' - ' + ' '.join(card.subtypes).title()
     w, h = draw.textsize(typeline)
-    draw.text((35, 304-h//2),
+    draw.text((35, 304 - h // 2),
               typeline,
               fill=(0, 0, 0, 255),
               font=fonts['font_type'])
@@ -172,15 +178,19 @@ def draw_card_text(image, draw, fonts, card):
                         else:
                             try:
                                 int(subsub_line[1])
-                                colorless_mana = img_manager.get_icon_text('colorless')
+                                colorless_mana = img_manager.get_icon_text(
+                                    'colorless')
                                 draw_colorless = ImageDraw.Draw(colorless_mana)
-                                w, h = draw_colorless.textsize(str(subsub_line[1]))
-                                draw_colorless.text(((18-w) // 2 - 2, (18-h) // 2 - 4),
-                                                    str(subsub_line[1]),
-                                                    fill=(0, 0, 0, 255),
-                                                    font=fonts['font_title'])
+                                w, h = draw_colorless.textsize(
+                                    str(subsub_line[1]))
+                                draw_colorless.text(
+                                    ((18 - w) // 2 - 2, (18 - h) // 2 - 4),
+                                    str(subsub_line[1]),
+                                    fill=(0, 0, 0, 255),
+                                    font=fonts['font_title'])
 
-                                image.paste(colorless_mana, (x, y), colorless_mana)
+                                image.paste(colorless_mana, (x, y),
+                                            colorless_mana)
                                 colorless_mana.close()
                                 x_offset += 21
                             except:
@@ -195,7 +205,8 @@ def draw_card_text(image, draw, fonts, card):
 
 
 def draw_card_copywrite(image, draw, fonts, card):
-    draw.text((60, 484), "Copy, right?", fill=(0, 0, 0, 255), font=fonts['font'])
+    draw.text((60, 484), "Copy, right?", fill=(0, 0, 0, 255),
+              font=fonts['font'])
 
 
 def draw_power_toughness(image, draw, fonts, card):
@@ -212,8 +223,8 @@ def draw_power_toughness(image, draw, fonts, card):
     if not c:
         c = 'a'
     pt_image = Image.open('app/card_parts/magic-new.mse-style/' +
-        c +
-        'pt.jpg')
+                          c +
+                          'pt.jpg')
     image.paste(pt_image, (271, 461))
     draw.text((295, 470), power + " / " + toughness, fill=(0, 0, 0, 255),
               font=fonts['font_title'])
@@ -245,12 +256,12 @@ def create_card_img(card, google):
 
 
 def draw_card_art(image, draw, fonts, card, art, w, h):
-    image.paste(art, ((image.size[0] - w) // 2, 175-h//2))
+    image.paste(art, ((image.size[0] - w) // 2, 175 - h // 2))
 
 
 def get_cost(card):
     cost = {}
-    
+
     cost['colorless'] = 0
     cost['white'] = card.cost.format().lower().count('w')
     cost['blue'] = card.cost.format().lower().count('u')
@@ -263,29 +274,29 @@ def get_cost(card):
         cost['colorless'] = int(m.group(1))
     return cost
 
-    
+
 def get_background_color(card):
     colors = card.cost.get_colors()
-    if colors=="":
+    if colors == "":
         return 'artifact'
-    if len(colors)>1:
+    if len(colors) > 1:
         return 'multicolor'
-    if colors=="W":
+    if colors == "W":
         return 'white'
-    if colors=="U":
+    if colors == "U":
         return 'blue'
-    if colors=="B":
+    if colors == "B":
         return 'black'
-    if colors=='R':
+    if colors == 'R':
         return 'red'
-    if colors=='G':
+    if colors == 'G':
         return 'green'
     return None
 
 
 def get_card_art(card, google):
     if google:
-        google_result=google_card_art(card)
+        google_result = google_card_art(card)
         if google_result != None:
             return google_result
     return get_default_card_art(card)
@@ -307,7 +318,8 @@ def google_card_art(card):
         query = "+".join(term[:-1])
         if color == 'u':
             color = 'blue'
-        img_url = magic_image.fetch(query + '+"fantasy"+paintings+-card', color)
+        img_url = magic_image.fetch(query + '+"fantasy"+paintings+-card',
+                                    color)
         if img_url:
             break
     if img_url:
