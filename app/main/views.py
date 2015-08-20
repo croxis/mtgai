@@ -140,10 +140,7 @@ def card_generate():
                    shell=False,
                    stdout=pipe) as process:
             queue = Queue()
-            #thread = Thread(target=enqueue_output, args=(process, queue))
             thread = eventlet.spawn(enqueue_output, process, queue)
-            #thread.daemon = True
-            #thread.start()
             '''#Threaded universal_newlines
             while process.poll() is None:
                 try:

@@ -325,9 +325,12 @@ def google_card_art(card):
     if img_url:
         with BytesIO(requests.get(img_url).content) as reader:
             reader.seek(0)
-            art = Image.open(reader)
-            art.thumbnail((311, 311))
-            art = art.crop((0, 0, 311, 229))
-            w, h = art.size
-            return (art, w, h)
+            try:
+                art = Image.open(reader)
+                art.thumbnail((311, 311))
+                art = art.crop((0, 0, 311, 229))
+                w, h = art.size
+                return (art, w, h)
+            except OSError:
+                print("Unable to handle this kind of image.")
     return None
