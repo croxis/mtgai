@@ -35,14 +35,13 @@ except ImportError:
 
 def get_fonts():
     return dict(
-        font_title = ImageFont.truetype("fonts/beleren-bold_P1.01.ttf", size=18),
-        font_type = ImageFont.truetype("fonts/beleren-bold_P1.01.ttf", size=16),
-        font = ImageFont.truetype("fonts/mplantin.ttf", size=18))
+        font_title=ImageFont.truetype("fonts/beleren-bold_P1.01.ttf", size=18),
+        font_type=ImageFont.truetype("fonts/beleren-bold_P1.01.ttf", size=16),
+        font=ImageFont.truetype("fonts/mplantin.ttf", size=18))
 
 
 def draw_costs(image, draw, fonts, card):
-
-    cost=get_cost(card)
+    cost = get_cost(card)
 
     w, h = img_manager.get_icon('white').size
 
@@ -140,32 +139,32 @@ def draw_card_text(image, draw, fonts, card):
                     if rg.match(subsub_line):
                         if '{w}' in subsub_line.lower():
                             image.paste(img_manager.get_icon_text('white'),
-                                        (35 + x_offset, 335 + y_offset - 3),
+                                        (36 + x_offset, 335 + y_offset - 3),
                                         img_manager.get_icon_text('blue'))
                             x_offset += 21
                         elif '{b}' in subsub_line.lower():
                             image.paste(img_manager.get_icon_text('black'),
-                                        (35 + x_offset, 335 + y_offset - 3),
+                                        (36 + x_offset, 335 + y_offset - 3),
                                         img_manager.get_icon_text('blue'))
                             x_offset += 21
                         elif '{u}' in subsub_line.lower():
                             image.paste(img_manager.get_icon_text('blue'),
-                                        (35 + x_offset, 335 + y_offset - 3),
+                                        (36 + x_offset, 335 + y_offset - 3),
                                         img_manager.get_icon_text('blue'))
                             x_offset += 21
                         elif '{r}' in subsub_line.lower():
                             image.paste(img_manager.get_icon_text('red'),
-                                        (35 + x_offset, 335 + y_offset - 3),
+                                        (36 + x_offset, 335 + y_offset - 3),
                                         img_manager.get_icon_text('blue'))
                             x_offset += 21
                         elif '{g}' in subsub_line.lower():
                             image.paste(img_manager.get_icon_text('green'),
-                                        (35 + x_offset, 335 + y_offset - 3),
+                                        (36 + x_offset, 335 + y_offset - 3),
                                         img_manager.get_icon_text('blue'))
                             x_offset += 21
                         elif '{t}' in subsub_line.lower():
                             image.paste(img_manager.get_icon_text('tap'),
-                                        (35 + x_offset, 335 + y_offset - 3),
+                                        (36 + x_offset, 335 + y_offset - 3),
                                         img_manager.get_icon_text('tap'))
                             x_offset += 21
                         else:
@@ -180,7 +179,7 @@ def draw_card_text(image, draw, fonts, card):
                                                     font=fonts['font_title'])
 
                                 image.paste(colorless_mana,
-                                        (35 + x_offset, 335 + y_offset - 3),
+                                        (36 + x_offset, 335 + y_offset - 3),
                                         colorless_mana)
                                 colorless_mana.close()
                                 x_offset += 21
@@ -192,7 +191,7 @@ def draw_card_text(image, draw, fonts, card):
                                   fill=(0, 0, 0, 255),
                                   font=fonts['font'])
                         x_offset += fonts['font'].getsize(subsub_line)[0]
-            y_offset += 20
+            y_offset += 19
 
 
 def draw_card_copywrite(image, draw, fonts, card):
@@ -223,32 +222,23 @@ def draw_rarity(image, draw, fonts, card):
 
 
 def create_card_img(card, google):
-
     cost=get_cost(card)
     
     background_color = get_background_color(card)
 
     image = img_manager.get_background(background_color)
 
-    fonts=get_fonts()
+    fonts = get_fonts()
     draw = ImageDraw.Draw(image)
 
     draw_costs(image, draw, fonts, card)
-
     draw_title(image, draw, fonts, card)
-
     draw_types(image, draw, fonts, card)
-
     draw_card_text(image, draw, fonts, card)
-
     draw_card_copywrite(image, draw, fonts, card)
-
     draw_power_toughness(image, draw, fonts, card)
-
     draw_rarity(image, draw, fonts, card)
-
     art, w, h = get_card_art(card, google)
-
     draw_card_art(image, draw, fonts, card, art, w, h)
 
     return image

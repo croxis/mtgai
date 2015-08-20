@@ -3,13 +3,15 @@ from datetime import datetime
 from io import BytesIO
 import os
 from queue import Empty
-import subprocess
+from subprocess import PIPE
 from threading import Thread
 import time
 import urllib.parse
 import zipfile
 
+import eventlet
 from eventlet import Queue
+from eventlet.green.subprocess import Popen
 
 from flask import make_response, redirect, render_template, send_file, session, \
     url_for
@@ -24,33 +26,18 @@ from .. import app, session_manager, socketio
 from .forms import GenerateCardsForm, MoreOptionsForm, SubmitCardsForm, \
     get_checkpoints_options
 
-
 thread_pool = {}  # CERF token: thread
 
 
 def enqueue_output(process, queue):
     while process.poll() is None:
         try:
-            line = process.stdout.readline()
+            line = process.stdout.readline().decode() #  Remove decode with unl
             if line.startswith('|') and line.endswith('|\n'):
                 queue.put(line)
             time.sleep(0.1)
         except ValueError:
             time.sleep(0.1)
-            #print("Empty result, lets see what happens.")
-    '''for line in iter(out.readline, b''):
-        print("Que line:", line)
-        queue.put(line)
-        print("End oput")
-    #out.close()'''
-
-
-@socketio.on('my event')  # Decorator to catch an event called "my event":
-def test_message(message):  # test_message() is the event callback function.
-    print("I got a message:", message)
-    socketio.emit('my response',
-         {'data': 'got it!'})  # Trigger a new event called "my response"
-    # that can be caught by another callback later in the program.
 
 
 @main.route('/')
@@ -95,7 +82,6 @@ def index_mtgai():
 @socketio.on('generate')
 def card_generate():
     # Filebased systems need the session cleaned up manually
-    print("Generate")
     session_manager.cleanup_sessions()
     checkpoint_option = session['checkpoint_path']
     do_nn = checkpoint_option != "None"
@@ -108,7 +94,7 @@ def card_generate():
         length = app.config['LENGTH_LIMIT']
     socketio.emit('set max char', {'data': length})
     length += 140  # Small fudge factor to be a little more accurate with
-                   # the amount of text actually generated
+    # the amount of text actually generated
     use_render_mode(session["render_mode"])
     if do_nn:
         command = ['th', 'sample_hs_v3.1.lua', checkpoint_path, '-gpuid',
@@ -141,17 +127,24 @@ def card_generate():
         session['mode'] = "nn"
         session['cardtext'] = ''
         app.logger.debug("Card generation initiated: " + ' '.join(command))
-        with subprocess.Popen(command,
-                              cwd=os.path.expanduser(
-                                  app.config['GENERATOR_PATH']),
-                              shell=False,
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.STDOUT,
-                              universal_newlines=True) as process:
+        pipe = PIPE
+        '''with Popen(command,
+                   cwd=os.path.expanduser(
+                       app.config['GENERATOR_PATH']),
+                   shell=False,
+                   stdout=pipe,
+                   universal_newlines=True) as process:'''
+        with Popen(command,
+                   cwd=os.path.expanduser(
+                       app.config['GENERATOR_PATH']),
+                   shell=False,
+                   stdout=pipe) as process:
             queue = Queue()
-            thread = Thread(target=enqueue_output, args=(process, queue))
-            thread.daemon = True
-            thread.start()
+            #thread = Thread(target=enqueue_output, args=(process, queue))
+            thread = eventlet.spawn(enqueue_output, process, queue)
+            #thread.daemon = True
+            #thread.start()
+            '''#Threaded universal_newlines
             while process.poll() is None:
                 try:
                     time.sleep(0.01)
@@ -163,13 +156,20 @@ def card_generate():
                     if session["do_text"]:
                         card = convert_to_card(line)
                         if card:
-                            socketio.emit('text card', {'data': card.format().replace('@', card.name.title()).split('\n')})
+                            socketio.emit('text card', {
+                                'data': card.format().replace('@',
+                                                              card.name.title()).split(
+                                    '\n')})
                     if session["do_images"]:
-                        socketio.emit('image card', {'data': urllib.parse.quote(line, safe='') + session[
-                    "image_extra_params"]})
-                    session['cardtext'] += line + '\n'  # Recreate the output from the sampler
-                    app.logger.debug("Card generated: " + line.rstrip('\n\n'))
-            '''while process.poll() is None:
+                        socketio.emit('image card', {
+                            'data': urllib.parse.quote(line, safe='') +
+                                    session[
+                                        "image_extra_params"]})
+                    session[
+                        'cardtext'] += line + '\n'  # Recreate the output from the sampler
+                    app.logger.debug("Card generated: " + line.rstrip('\n\n'))'''
+            '''# Unthreaded universal_nmewlines
+            while process.poll() is None:
                 line = process.stdout.readline()
                 if line.startswith('|') and line.endswith('|\n'):
                     socketio.emit('raw card', {'data': line})
@@ -182,6 +182,45 @@ def card_generate():
                     "image_extra_params"]})
                     session['cardtext'] += line + '\n'  # Recreate the output from the sampler
                     app.logger.debug("Card generated: " + line.rstrip('\n\n'))'''
+            '''#  Unthreaded no universal_newlines
+            while process.poll() is None:
+                line = process.stdout.readline().decode()
+                print("line:", type(line), line)
+                if line.startswith('|') and line.endswith('|\n'):
+                    socketio.emit('raw card', {'data': line})
+                    if session["do_text"]:
+                        card = convert_to_card(line)
+                        if card:
+                            socketio.emit('text card', {'data': card.format().replace('@', card.name.title()).split('\n')})
+                    if session["do_images"]:
+                        socketio.emit('image card', {'data': urllib.parse.quote(line, safe='') + session[
+                    "image_extra_params"]})
+                    session['cardtext'] += line + '\n'  # Recreate the output from the sampler
+                    app.logger.debug("Card generated: " + line.rstrip('\n\n'))'''
+            #  Threaded no universal_newlines
+            while process.poll() is None:
+                try:
+                    time.sleep(0.01)
+                    line = queue.get_nowait()
+                except Empty:
+                    pass
+                else:
+                    socketio.emit('raw card', {'data': line})
+                    if session["do_text"]:
+                        card = convert_to_card(line)
+                        if card:
+                            socketio.emit('text card', {
+                                'data': card.format().replace('@',
+                                                              card.name.title()).split(
+                                    '\n')})
+                    if session["do_images"]:
+                        socketio.emit('image card', {
+                            'data': urllib.parse.quote(line, safe='') +
+                                    session[
+                                        "image_extra_params"]})
+                    session[
+                        'cardtext'] += line + '\n'  # Recreate the output from the sampler
+                    app.logger.debug("Card generated: " + line.rstrip('\n\n'))
         session['cardsep'] = '\n\n'
         app.logger.debug("Card generation complete.")
     else:
