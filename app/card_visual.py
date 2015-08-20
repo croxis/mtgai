@@ -136,10 +136,12 @@ def draw_card_text(image, draw, fonts, card):
             rg = re.compile('(\\{.*?\\})', re.IGNORECASE | re.DOTALL)
             for subsub_line in rg.split(sub_line):
                 if subsub_line:
+                    x = 36 + x_offset
+                    y = 335 + y_offset - 3
                     if rg.match(subsub_line):
                         if '{w}' in subsub_line.lower():
                             image.paste(img_manager.get_icon_text('white'),
-                                        (36 + x_offset, 335 + y_offset - 3),
+                                        (x, y),
                                         img_manager.get_icon_text('blue'))
                             x_offset += 21
                         elif '{b}' in subsub_line.lower():
@@ -178,9 +180,7 @@ def draw_card_text(image, draw, fonts, card):
                                                     fill=(0, 0, 0, 255),
                                                     font=fonts['font_title'])
 
-                                image.paste(colorless_mana,
-                                        (36 + x_offset, 335 + y_offset - 3),
-                                        colorless_mana)
+                                image.paste(colorless_mana, (x, y), colorless_mana)
                                 colorless_mana.close()
                                 x_offset += 21
                             except:
@@ -209,6 +209,8 @@ def draw_power_toughness(image, draw, fonts, card):
     if len(c) > 1:
         c = 'm'
     c = c.lower()
+    if not c:
+        c = 'a'
     pt_image = Image.open('app/card_parts/magic-new.mse-style/' +
         c +
         'pt.jpg')
@@ -222,8 +224,6 @@ def draw_rarity(image, draw, fonts, card):
 
 
 def create_card_img(card, google):
-    cost=get_cost(card)
-    
     background_color = get_background_color(card)
 
     image = img_manager.get_background(background_color)
@@ -265,7 +265,7 @@ def get_cost(card):
 
     
 def get_background_color(card):
-    colors=card.cost.get_colors()
+    colors = card.cost.get_colors()
     if colors=="":
         return 'artifact'
     if len(colors)>1:
