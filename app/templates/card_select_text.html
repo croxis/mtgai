@@ -6,14 +6,24 @@
 {{ wtf.quick_form(form) }}
 </div>
 <div class="container-fluid">
+    {% if generate %}
     <div class="progress">
         <div id="raw-progress" class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="{{ session['length'] }}" style="min-width: 2em;">
             0%
         </div>
     </div>
+    {% endif %}
     <div class="panel panel-primary">
         <div class="panel-heading">Card text</div>
-        <div id="text-cards"></div>
+        <div id="text-cards">
+            {% if not generate %}
+            {% for line in text %}
+            <div>
+			    {{ line }}
+		    </div>
+            {% endfor %}
+            {% endif %}
+        </div>
     </div>
 </div>
 <div class="container-fluid">
@@ -27,5 +37,7 @@
 
 {% block scripts %}
 {{super()}}
+{% if generate %}
 <script type="text/javascript" src="{{ url_for('static', filename='stream.js') }}"></script>
+{% endif %}
 {% endblock %}

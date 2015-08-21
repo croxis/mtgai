@@ -3,8 +3,8 @@ from datetime import datetime
 from io import BytesIO
 import os
 from queue import Empty
+import random
 from subprocess import PIPE
-from threading import Thread
 import time
 import urllib.parse
 import zipfile
@@ -70,7 +70,9 @@ def index_mtgai():
         session['cardsep'] = '\r\n\r\n'
         session['mode'] = "existing"
         session['render_mode'] = form.render_mode.data
+        session['checkpoint_path'] = ''
         return redirect(url_for('.card_select'))
+    random_form.seed.data = random.randint(0, 255)
     return render_template('index.html',
                            current_time=datetime.utcnow(),
                            form=form,
@@ -231,6 +233,10 @@ def card_generate():
 
 @main.route('/mtgai/card-select', methods=['GET', 'POST'])
 def card_select():
+    generate = False
+    urls = []
+    if session['checkpoint_path']:
+        generate = True
     checkpoint_option = session['checkpoint_path']
     do_nn = checkpoint_option != "None"
     if do_nn:
@@ -242,7 +248,7 @@ def card_select():
         return render_template('nn_dummy.html', command=session['command'])
     else:
         use_render_mode(session["render_mode"])
-        extra_template_data = {}
+        extra_template_data = {'generate': generate}
         extra_template_data['form'] = MoreOptionsForm(
             can_print=session["can_print"], can_mse_set=session["can_mse_set"])
         if session["can_print"]:
@@ -253,6 +259,12 @@ def card_select():
             if extra_template_data['form'].validate_on_submit():
                 if extra_template_data['form'].mse_set_button.data:
                     return redirect(url_for('.download_mse_set'))
+        if session["do_images"]:
+            extra_template_data['urls'] = convert_to_urls(session['cardtext'], cardsep=session['cardsep'])
+        if session["do_text"]:
+            extra_template_data['text'] = convert_to_text(session['cardtext'], cardsep=session['cardsep'])
+        app.logger.debug("Render template: " + session['render_template'])
+        print("Generate:", generate)
         return render_template(session["render_template"],
                                **extra_template_data)
 
@@ -368,8 +380,8 @@ def convert_to_cards(text):
     return cards
 
 
-def convert_to_text(text):
-    cards = convert_to_cards(text, session['cardsep'])
+def convert_to_text(text, cardsep):
+    cards = convert_to_cards(text)
     text = []
     for card in cards:
         text.extend(card.format().replace('@', card.name.title()).split('\n'))
