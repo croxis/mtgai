@@ -22,10 +22,6 @@ STORE_DIR = CACHE_DIR + "/store"
 if not os.path.exists(STORE_DIR):
     os.makedirs(STORE_DIR)
 
-copyright_check = ""
-if len(sys.argv) > 1 and sys.argv[1][0].upper() == "T":
-    copyright_check = "&as_rights=(cc_publicdomain|cc_attribute|cc_sharealike|cc_noncommercial).-(cc_nonderived)"
-
 
 def trim(list):
     s = []
@@ -48,7 +44,6 @@ def fetch(query, color):
     # base_url = 'https://www.googleapis.com/customsearch/v1?key=YOUR_API_KEY&cx=YOUR_CSE_ID&q=flower&searchType=image&fileType=jpg&imgSize=small&alt=json'
 
     start = 0  # Google's start query string parameter for pagination.
-    #while start < 60:  # Google will only return a max of 56 results.
     if True:
         try:
             r = requests.get(base_url % start)
@@ -66,7 +61,6 @@ def fetch(query, color):
             if r:
                 break'''
         if r == None:
-            #continue
             return
         loads = None
         try:

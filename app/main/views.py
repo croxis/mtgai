@@ -57,7 +57,7 @@ def index_mtgai():
         session['primetext'] = random_form.primetext.data
         session['length'] = random_form.length.data
         session['temperature'] = float(random_form.temperature.data)
-        session['name'] = random_form.name.data
+        session['name'] = random_form.name.data.lower()  # Uppercase crashes nn
         session['supertypes'] = random_form.supertypes.data
         session['types'] = random_form.types.data
         session['subtypes'] = random_form.subtypes.data
@@ -218,6 +218,7 @@ def card_generate():
                     session[
                         'cardtext'] += line + '\n'  # Recreate the output from the sampler
                     app.logger.debug("Card generated: " + line.rstrip('\n\n'))
+
         session['cardsep'] = '\n\n'
         app.logger.debug("Card generation complete.")
     else:
