@@ -259,9 +259,9 @@ def card_select():
             if extra_template_data['form'].validate_on_submit():
                 if extra_template_data['form'].mse_set_button.data:
                     return redirect(url_for('.download_mse_set'))
-        if session["do_images"]:
+        if session["do_images"] and not generate:
             extra_template_data['urls'] = convert_to_urls(session['cardtext'], cardsep=session['cardsep'])
-        if session["do_text"]:
+        if session["do_text"] and not generate:
             extra_template_data['text'] = convert_to_text(session['cardtext'], cardsep=session['cardsep'])
         app.logger.debug("Render template: " + session['render_template'])
         print("Generate:", generate)
