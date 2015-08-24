@@ -33,7 +33,8 @@ def enqueue_output(process, queue):
     while process.poll() is None:
         try:
             line = process.stdout.readline().decode() #  Remove decode with unl
-            if line.startswith('|') and line.endswith('|\n'):
+            if line.count('|') >= 9:
+                app.logger.debug("Line: " + line)
                 queue.put(line)
             time.sleep(0.1)
         except ValueError:
