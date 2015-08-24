@@ -51,8 +51,7 @@ def fetch(query, color):
             app.logger.error("Unable to get url: " + base_url + ' | ' + str(start))
             return
         except ValueError:
-            app.logger.error("Unable to get url: " + base_url + ' | ' + str(start))
-            app.logger.exception()
+            app.logger.exception("Unable to get url: " + base_url + ' | ' + str(start))
             return
         # Be nice to Google and they'll be nice back :)
         time.sleep(1.5)

@@ -1,3 +1,5 @@
+-- https://drive.google.com/file/d/0BxF7G2b8kigCYnpERFNpR2I3cjQ/view?usp=sharing
+-- modifications by Talcos allow 'whispering' to prime the network
 
 --[[
 
@@ -16,6 +18,7 @@ require 'lfs'
 
 require 'util.OneHot'
 require 'util.misc'
+require 'model.LSTMb'
 
 cmd = torch.CmdLine()
 cmd:text()
