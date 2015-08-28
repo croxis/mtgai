@@ -15,6 +15,7 @@ from eventlet.green.subprocess import Popen
 
 from flask import make_response, redirect, render_template, send_file, session, \
     url_for
+from flask.ext.socketio import join_room, leave_room
 import lib.cardlib as cardlib
 import lib.utils as utils
 from reportlab.lib.pagesizes import landscape, letter
@@ -127,16 +128,12 @@ def card_generate():
     if session['bodytext_append']:
         command += ['-bodytext_append', session['bodytext_append']]
     if do_nn:
+        room = session['csrf_token']
+        join_room(room)
         session['mode'] = "nn"
         session['cardtext'] = ''
         app.logger.debug("Card generation initiated: " + ' '.join(command))
         pipe = PIPE
-        '''with Popen(command,
-                   cwd=os.path.expanduser(
-                       app.config['GENERATOR_PATH']),
-                   shell=False,
-                   stdout=pipe,
-                   universal_newlines=True) as process:'''
         with Popen(command,
                    cwd=os.path.expanduser(
                        app.config['GENERATOR_PATH']),
@@ -144,7 +141,6 @@ def card_generate():
                    stdout=pipe) as process:
             queue = Queue()
             thread = eventlet.spawn(enqueue_output, process, queue)
-            '''#Threaded universal_newlines
             while process.poll() is None:
                 try:
                     time.sleep(0.01)
@@ -152,72 +148,21 @@ def card_generate():
                 except Empty:
                     pass
                 else:
-                    socketio.emit('raw card', {'data': line})
+                    socketio.emit('raw card', {'data': line}, room=room)
                     if session["do_text"]:
                         card = convert_to_card(line)
                         if card:
                             socketio.emit('text card', {
                                 'data': card.format().replace('@',
                                                               card.name.title()).split(
-                                    '\n')})
+                                    '\n')},
+                                          room=room)
                     if session["do_images"]:
                         socketio.emit('image card', {
                             'data': urllib.parse.quote(line, safe='') +
                                     session[
-                                        "image_extra_params"]})
-                    session[
-                        'cardtext'] += line + '\n'  # Recreate the output from the sampler
-                    app.logger.debug("Card generated: " + line.rstrip('\n\n'))'''
-            '''# Unthreaded universal_nmewlines
-            while process.poll() is None:
-                line = process.stdout.readline()
-                if line.startswith('|') and line.endswith('|\n'):
-                    socketio.emit('raw card', {'data': line})
-                    if session["do_text"]:
-                        card = convert_to_card(line)
-                        if card:
-                            socketio.emit('text card', {'data': card.format().replace('@', card.name.title()).split('\n')})
-                    if session["do_images"]:
-                        socketio.emit('image card', {'data': urllib.parse.quote(line, safe='') + session[
-                    "image_extra_params"]})
-                    session['cardtext'] += line + '\n'  # Recreate the output from the sampler
-                    app.logger.debug("Card generated: " + line.rstrip('\n\n'))'''
-            '''#  Unthreaded no universal_newlines
-            while process.poll() is None:
-                line = process.stdout.readline().decode()
-                print("line:", type(line), line)
-                if line.startswith('|') and line.endswith('|\n'):
-                    socketio.emit('raw card', {'data': line})
-                    if session["do_text"]:
-                        card = convert_to_card(line)
-                        if card:
-                            socketio.emit('text card', {'data': card.format().replace('@', card.name.title()).split('\n')})
-                    if session["do_images"]:
-                        socketio.emit('image card', {'data': urllib.parse.quote(line, safe='') + session[
-                    "image_extra_params"]})
-                    session['cardtext'] += line + '\n'  # Recreate the output from the sampler
-                    app.logger.debug("Card generated: " + line.rstrip('\n\n'))'''
-            #  Threaded no universal_newlines
-            while process.poll() is None:
-                try:
-                    time.sleep(0.01)
-                    line = queue.get_nowait()
-                except Empty:
-                    pass
-                else:
-                    socketio.emit('raw card', {'data': line})
-                    if session["do_text"]:
-                        card = convert_to_card(line)
-                        if card:
-                            socketio.emit('text card', {
-                                'data': card.format().replace('@',
-                                                              card.name.title()).split(
-                                    '\n')})
-                    if session["do_images"]:
-                        socketio.emit('image card', {
-                            'data': urllib.parse.quote(line, safe='') +
-                                    session[
-                                        "image_extra_params"]})
+                                        "image_extra_params"]},
+                                      room=room)
                     session[
                         'cardtext'] += line + '\n'  # Recreate the output from the sampler
                     app.logger.debug("Card generated: " + line.rstrip('\n\n'))
@@ -229,13 +174,13 @@ def card_generate():
         session['command'] = " ".join(command)
     session.modified = True
     app.save_session(session, make_response('dummy'))
-    socketio.emit('finished generation', {'data': ''})
+    socketio.emit('finished generation', {'data': ''}, room=room)
+    leave_room(room)
 
 
 @main.route('/mtgai/card-select', methods=['GET', 'POST'])
 def card_select():
     generate = False
-    urls = []
     if session['checkpoint_path']:
         generate = True
     checkpoint_option = session['checkpoint_path']
@@ -265,7 +210,6 @@ def card_select():
         if session["do_text"] and not generate:
             extra_template_data['text'] = convert_to_text(session['cardtext'], cardsep=session['cardsep'])
         app.logger.debug("Render template: " + session['render_template'])
-        print("Generate:", generate)
         return render_template(session["render_template"],
                                **extra_template_data)
 

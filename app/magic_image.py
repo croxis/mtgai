@@ -47,6 +47,7 @@ def fetch(query, color):
     if True:
         try:
             r = requests.get(base_url % start)
+            time.sleep(1.5)
         except TypeError:
             app.logger.error("Unable to get url: " + base_url + ' | ' + str(start))
             return
@@ -54,25 +55,13 @@ def fetch(query, color):
             app.logger.exception("Unable to get url: " + base_url + ' | ' + str(start))
             return
         # Be nice to Google and they'll be nice back :)
-        time.sleep(1.5)
-        '''r = None
-        for i in range(5):
-            print("URL:", base_url % start)
-            r = requests.get(base_url % start)
-            start += 4  # 4 images per page.
-            time.sleep(1.5)
-            if r:
-                break'''
-        if r == None:
+        if r is None:
             return
-        loads = None
         try:
             loads = json.loads(r.text)['responseData']['results']
         except TypeError:
-            #continue
             return
         if not loads:
-            #continue
             return
         for image_info in loads:
             url = image_info['unescapedUrl']
